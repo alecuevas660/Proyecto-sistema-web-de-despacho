@@ -22,8 +22,129 @@ También necesitarás:
 2. Iniciar sesión en Docker Desktop
 3. Clonar este repositorio en tu máquina local
 
-**Nota:** No es necesario instalar Python ni PostgreSQL en tu máquina local. Docker se encargará de proporcionar ambos en contenedores aislados.
+**Nota:** Es necesario instalar postgres antes de instalar y configurar Docker.
 
+--##Paso a paso para instalar docker.
+
+## Windows
+
+1. **Descargar el instalador:**
+   - Visita [PostgreSQL Windows Installer](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
+   - Selecciona la última versión estable para Windows
+   - Elige la versión de 64 bits
+
+2. **Ejecutar el instalador:**
+   - Ejecuta el archivo .exe descargado
+   - Sigue el asistente de instalación
+   - Selecciona los componentes a instalar (mantén todos por defecto):
+     - PostgreSQL Server
+     - pgAdmin 4
+     - Stack Builder
+     - Command Line Tools
+
+3. **Configuración durante la instalación:**
+   - Elige el directorio de instalación (por defecto: C:\Program Files\PostgreSQL\[version])
+   - Establece una contraseña para el usuario postgres
+   - Selecciona el puerto (por defecto: 5432)
+   - Selecciona la configuración regional
+
+4. **Verificar la instalación:**
+   - Busca "pgAdmin 4" en el menú inicio
+   - O abre SQL Shell (psql)
+
+5. **Agregar PostgreSQL al PATH (opcional):**
+   - Panel de Control > Sistema > Configuración avanzada del sistema
+   - Variables de entorno > Path
+   - Agregar: C:\Program Files\PostgreSQL\[version]\bin
+
+### macOS:
+
+   #### Usando Homebrew (recomendado)
+   1. **Instalar Homebrew si no está instalado:**
+      ```bash
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      ```
+
+   2. **Instalar PostgreSQL:**
+      ```bash
+      brew install postgresql
+      ```
+
+   3. **Iniciar el servicio:**
+      ```bash
+      brew services start postgresql
+      ```
+
+### Linux (Ubuntu):
+
+      1. **Actualizar el sistema:**
+         ```bash
+         sudo apt update
+         sudo apt upgrade
+         ```
+
+      2. **Instalar PostgreSQL:**
+         ```bash
+         sudo apt install postgresql postgresql-contrib
+         ```
+
+      3. **Verificar la instalación:**
+         ```bash
+         sudo systemctl status postgresql
+         ```
+
+      4. **Iniciar el servicio:**
+         ```bash
+         sudo systemctl start postgresql
+         sudo systemctl enable postgresql
+         ```
+
+         ### Verificación de la instalación:
+
+         1. **Verificar versión de PostgreSQL:**
+            ```bash
+            psql --version
+            ```
+
+         2. **Conectar a PostgreSQL:**
+            ```bash
+            psql -U postgres
+            ```
+
+         ### Comandos útiles de PostgreSQL:
+
+         ```sql
+         -- Listar bases de datos
+         \l
+
+         -- Conectar a una base de datos
+         \c nombre_base_datos
+
+         -- Listar tablas
+         \dt
+
+         -- Salir
+         \q
+         ```
+
+         ### Notas importantes:
+
+         1. **Windows**:
+            - Guarda la contraseña que estableces durante la instalación
+            - Considera agregar PostgreSQL al PATH del sistema
+
+         2. **macOS**:
+            - Si usas Homebrew, el servicio se puede iniciar automáticamente al arranque
+            - La contraseña inicial puede variar según el método de instalación
+
+         3. **Linux**:
+            - El usuario postgres se crea automáticamente
+            - Puede ser necesario configurar la autenticación en pg_hba.conf
+
+         4. **Seguridad**:
+            - Cambia la contraseña del usuario postgres
+            - Configura adecuadamente los permisos de acceso
+            - Realiza copias de seguridad regularmente
 ---
 
 ## 🔧 Configuración de Variables de Entorno
