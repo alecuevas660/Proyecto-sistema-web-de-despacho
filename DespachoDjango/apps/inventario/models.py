@@ -60,7 +60,9 @@ class StockVariable(models.Model):
         Fecha y hora de la última actualización del stock.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_variables')
+    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE,
+                                    related_name='stock_variables')
+    """Linea de arriba muy larga y se decidió acortar"""
     cantidad_stock = models.IntegerField()
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -92,7 +94,9 @@ class DetalleCompra(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fecha_compra = models.DateTimeField(auto_now_add=True)
     cantidad_productos = models.IntegerField()
-    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='detalles_compra')
+    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE,
+                                    related_name='detalles_compra')
+    """Linea de arriba muy larga y se decidió acortar"""
 
     class Meta:
         """

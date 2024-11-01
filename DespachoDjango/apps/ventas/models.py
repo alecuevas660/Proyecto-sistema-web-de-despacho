@@ -49,7 +49,9 @@ class DetalleVenta(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cantidad_productos = models.IntegerField()
-    id_producto = models.ForeignKey('inventario.Product', on_delete=models.CASCADE, related_name='detalles_venta')
+    id_producto = models.ForeignKey('inventario.Product',
+                                    on_delete=models.CASCADE, related_name='detalles_venta')
+    """Linea de arriba muy larga y se decidió acortar"""
     id_venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='detalles_venta')
 
     class Meta:
