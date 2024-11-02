@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator
 from django.conf import settings
 from apps.inventario.models import Product
 
+# clase venta
 class Venta(models.Model):
     """Modelo que representa una venta en el sistema."""
 
