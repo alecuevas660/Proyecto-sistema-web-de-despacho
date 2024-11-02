@@ -7,6 +7,7 @@ import uuid
 from django.db import models
 from django.core.validators import MinValueValidator
 from apps.inventario.models import Product
+from apps.users.models import Cliente
 
 # Modelo de venta
 class Venta(models.Model):
@@ -20,7 +21,7 @@ class Venta(models.Model):
         total_venta (DecimalField): Total de la venta.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_cliente = models.ForeignKey('useraccount.Cliente', on_delete=models.CASCADE)
+    id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     fecha_venta = models.DateTimeField(auto_now_add=True)
     total_venta = models.DecimalField(max_digits=10, decimal_places=2)
 
