@@ -1,181 +1,223 @@
-"""
-Este módulo define un sistema de gestión de usuarios, 
-incluyendo un gestor de usuarios personalizado,
-un modelo de usuario, y modelos para transportistas y clientes.
-"""
-
 import uuid
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.core.mail import send_mail
 from django.db import models
+from django.utils import timezone
+from django.core.validators import RegexValidator
 
-# Administrador personalizado para el modelo User
-class CustomUserManager(UserManager):
-    """
-    Gestor de usuarios personalizado para el modelo User.
-    Proporciona métodos para crear usuarios y superusuarios.
-    """
-    def _create_user(self, username, email, password, **extra_fields):
+class CustomUserManager(BaseUserManager):
+    """Gestor personalizado para el modelo de usuario."""
+
+    def _create_user(self, email, password, **extra_fields):
         """
-        Crea y guarda un usuario con el email y la contraseña proporcionados.
-        
-        Args:
-            username (str): El nombre de usuario.
-            email (str): El email del usuario.
-            password (str): La contraseña del usuario.
-            **extra_fields: Otros campos adicionales para el usuario.
-        
-        Raises:
-            ValueError: Si no se proporciona un email.
-        
-        Returns:
-            User: El usuario creado.
+        Crea y guarda un usuario con el email y contraseña dados.
         """
         if not email:
-            raise ValueError('El email es necesario')
+            raise ValueError('El email es obligatorio')
         email = self.normalize_email(email)
-        user = self.model(username=username, email=email, **extra_fields)
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
+
+        # Crear perfil automáticamente según el rol
+        if user.role == 'client':
+            ClienteProfile.objects.create(user=user)
+        elif user.role == 'transport':
+            TransportistaProfile.objects.create(user=user)
+
         return user
 
-    def create_user(self, username=None, email=None, password=None, **extra_fields):
-        """
-        Crea un usuario normal.
-        
-        Args:
-            username (str): El nombre de usuario.
-            email (str): El email del usuario.
-            password (str): La contraseña del usuario.
-            **extra_fields: Otros campos adicionales para el usuario.
-        
-        Returns:
-            User: El usuario creado.
-        """
+    def create_user(self, email=None, password=None, **extra_fields):
+        """Crea un usuario normal."""
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
-        return self._create_user(username, email, password, **extra_fields)
+        return self._create_user(email, password, **extra_fields)
 
-    def create_superuser(self, username=None, email=None, password=None, **extra_fields):
-        """
-        Crea un superusuario.
-        
-        Args:
-            username (str): El nombre de usuario.
-            email (str): El email del superusuario.
-            password (str): La contraseña del superusuario.
-            **extra_fields: Otros campos adicionales para el superusuario.
-        
-        Returns:
-            User: El superusuario creado.
-        """
+    def create_superuser(self, email=None, password=None, **extra_fields):
+        """Crea un superusuario."""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        return self._create_user(username, email, password, **extra_fields)
+        extra_fields.setdefault('role', 'admin')
 
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
 
-# Modelo de usuario personalizado
+        return self._create_user(email, password, **extra_fields)
+
 class User(AbstractBaseUser, PermissionsMixin):
-    """
-    Modelo de usuario personalizado que utiliza email como nombre de usuario.
-    Extiende AbstractBaseUser y PermissionsMixin para manejar autenticación y permisos.
-    
-    Attributes:
-        id (UUIDField): Identificador único del usuario.
-        email (EmailField): Email único del usuario.
-        username (CharField): Nombre de usuario.
-        avatar (ImageField): Avatar del usuario.
-        is_active (BooleanField): Indica si el usuario está activo.
-        is_superuser (BooleanField): Indica si el usuario es un superusuario.
-        is_staff (BooleanField): Indica si el usuario tiene acceso al admin.
-        date_joined (DateTimeField): Fecha y hora de creación del usuario.
-        last_login (DateTimeField): Fecha y hora del último inicio de sesión.
-    """
+    """Modelo de usuario personalizado que usa email como identificador principal."""
+
+    class Roles(models.TextChoices):
+        ADMIN = 'admin', 'Administrador'
+        CLIENT = 'client', 'Cliente'
+        TRANSPORT = 'transport', 'Transportista'
+
+    phone_regex = RegexValidator(
+        regex=r'^\+?1?\d{9,15}$',
+        message="El número debe estar en formato: '+999999999'. Hasta 15 dígitos permitidos."
+    )
+
+    # Campos básicos
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.EmailField(unique=True)
-    username = models.CharField(max_length=255, null=True, blank=True)
-    avatar = models.ImageField(null=True, blank=True, upload_to='uploads/avatars')
+    email = models.EmailField('Correo Electrónico', unique=True)
+    nombre = models.CharField('Nombre', max_length=150, default="Usuario")
+    apellido = models.CharField('Apellido', max_length=150, default="Sin Apellido")
+    telefono = models.CharField(
+        'Teléfono',
+        validators=[phone_regex],
+        max_length=17,
+        blank=True
+    )
+    direccion = models.TextField('Dirección', blank=True)
+    role = models.CharField(
+        'Rol',
+        max_length=20,
+        choices=Roles.choices,
+        default=Roles.CLIENT
+    )
+    avatar = models.ImageField(
+        'Foto de Perfil',
+        upload_to='avatars/%Y/%m/',
+        null=True,
+        blank=True
+    )
 
-    is_active = models.BooleanField(default=True)
-    is_superuser = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-
-    date_joined = models.DateTimeField(auto_now_add=True)
-    last_login = models.DateTimeField(null=True, blank=True)
+    # Campos de estado
+    is_active = models.BooleanField('Activo', default=True)
+    is_staff = models.BooleanField('Staff', default=False)
+    is_superuser = models.BooleanField('Superusuario', default=False)
+    date_joined = models.DateTimeField('Fecha de Registro', default=timezone.now)
+    last_login = models.DateTimeField('Último Acceso', blank=True, null=True)
 
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    REQUIRED_FIELDS = ['nombre', 'apellido']
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo User.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
-        db_table = 'user_account'
-        verbose_name = 'User'
-        verbose_name_plural = 'Users'
+        db_table = 'users'
+        verbose_name = 'Usuario'
+        verbose_name_plural = 'Usuarios'
+        ordering = ['-date_joined']
 
+    def get_full_name(self):
+        """Retorna el nombre completo del usuario."""
+        return f"{self.nombre} {self.apellido}".strip()
 
-# Modelo de transportista
-class Transportista(models.Model):
-    """
-    Modelo que representa a un transportista.
-    
-    Attributes:
-        id (UUIDField): Identificador único del transportista.
-        nombre (CharField): Nombre del transportista.
-        contacto (CharField): Información de contacto del transportista.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nombre = models.CharField(max_length=255)
-    contacto = models.CharField(max_length=255)
+    def get_short_name(self):
+        """Retorna el nombre corto del usuario."""
+        return self.nombre
+
+    def email_user(self, subject, message, from_email=None, **kwargs):
+        """Envía un email al usuario."""
+        send_mail(subject, message, from_email, [self.email], **kwargs)
+
+    def __str__(self):
+        return f"{self.get_full_name()} ({self.email})"
+
+    @property
+    def is_admin(self):
+        return self.role == self.Roles.ADMIN
+
+    @property
+    def is_client(self):
+        return self.role == self.Roles.CLIENT
+
+    @property
+    def is_transport(self):
+        return self.role == self.Roles.TRANSPORT
+
+class ClienteProfile(models.Model):
+    """Perfil extendido para usuarios con rol de cliente."""
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='cliente_profile'
+    )
+    direccion_envio = models.CharField('Dirección de Envío', max_length=255)
+    preferencias_envio = models.TextField('Preferencias de Envío', blank=True)
+    historial_compras = models.JSONField(
+        'Historial de Compras',
+        default=dict,
+        blank=True
+    )
+    fecha_ultima_compra = models.DateTimeField(
+        'Última Compra',
+        null=True,
+        blank=True
+    )
+    total_compras = models.DecimalField(
+        'Total en Compras',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo Transportista.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
-        db_table = 'transportistas'
-        verbose_name = 'Transportista'
-        verbose_name_plural = 'Transportistas'
+        db_table = 'cliente_profiles'
+        verbose_name = 'Perfil de Cliente'
+        verbose_name_plural = 'Perfiles de Clientes'
 
+    def __str__(self):
+        return f"Perfil de Cliente: {self.user.get_full_name()}"
 
-# Modelo de cliente
-class Cliente(models.Model):
-    """
-    Modelo que representa a un cliente.
-    
-    Attributes:
-        id (UUIDField): Identificador único del cliente.
-        nombre (CharField): Nombre del cliente.
-        apellido (CharField): Apellido del cliente.
-        direccion_envio (CharField): Dirección de envío del cliente.
-        contacto (CharField): Información de contacto del cliente.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    nombre = models.CharField(max_length=255)
-    apellido = models.CharField(max_length=255)
-    direccion_envio = models.CharField(max_length=255)
-    contacto = models.CharField(max_length=255)
+class TransportistaProfile(models.Model):
+    """Perfil extendido para usuarios con rol de transportista."""
+
+    TIPO_LICENCIA_CHOICES = [
+        ('A', 'Clase A'),
+        ('B', 'Clase B'),
+        ('C', 'Clase C'),
+        ('D', 'Clase D'),
+    ]
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='transportista_profile'
+    )
+    licencia = models.CharField(
+        'Licencia',
+        max_length=50,
+        choices=TIPO_LICENCIA_CHOICES
+    )
+    numero_licencia = models.CharField(
+        'Número de Licencia',
+        max_length=20,
+        unique=True
+    )
+    vehiculo = models.CharField('Vehículo', max_length=100)
+    zona_cobertura = models.TextField('Zona de Cobertura')
+    disponibilidad = models.BooleanField('Disponible', default=True)
+    entregas_completadas = models.PositiveIntegerField(
+        'Entregas Completadas',
+        default=0
+    )
+    calificacion_promedio = models.DecimalField(
+        'Calificación Promedio',
+        max_digits=3,
+        decimal_places=2,
+        default=0
+    )
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo Cliente.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
-        db_table = 'clientes'
-        verbose_name = 'Cliente'
-        verbose_name_plural = 'Clientes'
+        db_table = 'transportista_profiles'
+        verbose_name = 'Perfil de Transportista'
+        verbose_name_plural = 'Perfiles de Transportistas'
+
+    def __str__(self):
+        return f"Perfil de Transportista: {self.user.get_full_name()}"
+
+    def actualizar_calificacion(self, nueva_calificacion):
+        """Actualiza la calificación promedio del transportista."""
+        self.calificacion_promedio = (
+            (self.calificacion_promedio * self.entregas_completadas + nueva_calificacion) /
+            (self.entregas_completadas + 1)
+        )
+        self.entregas_completadas += 1
+        self.save()
