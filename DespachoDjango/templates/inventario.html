@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estado del Inventario</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2>Estado del inventario</h2>
+            <p class="text-muted">Niveles de stock actuales</p>
+        </div>
+        <div class="d-flex align-items-center">
+            <select class="form-control mr-2">
+                <option>Este Mes</option>
+                <option>Últimos 3 Meses</option>
+                <option>Últimos 6 Meses</option>
+            </select>
+            <button class="btn btn-outline-secondary">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <input type="text" class="form-control mr-2" placeholder="Buscar">
+        <select class="form-control mr-2">
+            <option>Todas las categorías</option>
+            <option>Bebidas</option>
+            <option>Lácteos</option>
+            <option>Bebidas premium</option>
+        </select>
+        <select class="form-control">
+            <option>5 por página</option>
+            <option>10 por página</option>
+            <option>20 por página</option>
+        </select>
+        <button class="btn btn-primary ml-3">+ Nuevo Producto</button>
+    </div>
+
+    <table class="table table-bordered text-center">
+        <thead class="thead-light">
+            <tr>
+                <th>Producto <i class="fas fa-sort"></i></th>
+                <th>Stock Actual</th>
+                <th>Stock Mínimo</th>
+                <th>Estado</th>
+                <th>Categoría</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Café Caímán</td>
+                <td>50</td>
+                <td>75</td>
+                <td><span class="badge badge-warning">Bajo</span></td>
+                <td>Bebidas</td>
+                <td>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-pen"></i></button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-trash-alt"></i></button>
+                </td>
+            </tr>
+            <tr>
+                <td>Caímán Blue Label</td>
+                <td>30</td>
+                <td>50</td>
+                <td><span class="badge badge-danger">Crítico</span></td>
+                <td>Bebidas premium</td>
+                <td>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-pen"></i></button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-trash-alt"></i></button>
+                </td>
+            </tr>
+            <tr>
+                <td>Elixir 98</td>
+                <td>100</td>
+                <td>80</td>
+                <td><span class="badge badge-success">Óptimo</span></td>
+                <td>Bebidas premium</td>
+                <td>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-pen"></i></button>
+                    <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-trash-alt"></i></button>
+                </td>
+            </tr>
+            <!-- Añadir más filas según sea necesario -->
+        </tbody>
+    </table>
+    
+    <div class="d-flex justify-content-between align-items-center">
+        <p>Mostrando 1 a 5 de 10 productos</p>
+        <nav>
+            <ul class="pagination pagination-sm">
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item"><a class="page-link" href="#">4</a></li>
+                <li class="page-item"><a class="page-link" href="#">5</a></li>
+                <li class="page-item"><a class="page-link" href="#">6</a></li>
+                <li class="page-item"><a class="page-link" href="#">7</a></li>
+                <li class="page-item"><a class="page-link" href="#">8</a></li>
+                <li class="page-item"><a class="page-link" href="#">></a></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>
