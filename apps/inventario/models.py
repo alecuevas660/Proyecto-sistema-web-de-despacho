@@ -6,7 +6,6 @@ ReporteEnvios y ReporteFinanciero.
 
 import uuid
 from django.db import models
-from apps.users.models import Cliente, Transportista
 
 # Modelo de producto
 class Product(models.Model):
@@ -61,7 +60,9 @@ class StockVariable(models.Model):
         Fecha y hora de la última actualización del stock.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_variables')
+    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE,
+                                    related_name='stock_variables')
+    """Linea de arriba muy larga y se decidió acortar"""
     cantidad_stock = models.IntegerField()
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -93,7 +94,9 @@ class DetalleCompra(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fecha_compra = models.DateTimeField(auto_now_add=True)
     cantidad_productos = models.IntegerField()
-    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='detalles_compra')
+    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE,
+                                    related_name='detalles_compra')
+    """Linea de arriba muy larga y se decidió acortar"""
 
     class Meta:
         """
@@ -121,8 +124,8 @@ class OrdenDespacho(models.Model):
         id_compra (ForeignKey): Relación con el modelo DetalleCompra.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
-    id_tran = models.ForeignKey(Transportista, on_delete=models.CASCADE)
+    id_cliente = models.ForeignKey('useraccount.Cliente', on_delete=models.CASCADE)
+    id_tran = models.ForeignKey('useraccount.Transportista', on_delete=models.CASCADE)
     id_compra = models.ForeignKey(DetalleCompra, on_delete=models.CASCADE)
 
     class Meta:
@@ -152,7 +155,7 @@ class SeguimientoEnvio(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     estado_envio = models.CharField(max_length=100)
-    id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    id_cliente = models.ForeignKey('useraccount.Cliente', on_delete=models.CASCADE)
     id_orden = models.ForeignKey(OrdenDespacho, on_delete=models.CASCADE)
 
     class Meta:
@@ -181,7 +184,7 @@ class ReporteEnvios(models.Model):
         fecha_reporte (DateField): Fecha del reporte.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    id_cliente = models.ForeignKey('useraccount.Cliente', on_delete=models.CASCADE)
     cantidad_envios = models.IntegerField()
     fecha_reporte = models.DateField()
 

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Órdenes de Despacho</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2>Órdenes de despacho</h2>
+        </div>
+        <div class="d-flex align-items-center">
+            <select class="form-control mr-2">
+                <option>Este Mes</option>
+                <option>Últimos 3 Meses</option>
+                <option>Últimos 6 Meses</option>
+            </select>
+            <button class="btn btn-outline-secondary">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3">
+        <input type="text" class="form-control mr-2" placeholder="Buscar">
+        <select class="form-control">
+            <option>5 por página</option>
+            <option>10 por página</option>
+            <option>20 por página</option>
+        </select>
+        <button class="btn btn-primary ml-3">+ Nueva Orden</button>
+    </div>
+
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link active" href="#">Lista de despacho</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">Agregar nueva orden despacho</a>
+        </li>
+    </ul>
+
+    <table class="table table-bordered text-center">
+        <thead class="thead-light">
+            <tr>
+                <th>Orden ID <i class="fas fa-sort"></i></th>
+                <th>Cliente</th>
+                <th>ETA</th>
+                <th>Estado</th>
+                <th>Dirección</th>
+                <th>Asignado a</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>ORD-001</td>
+                <td>Supermercado A</td>
+                <td>30 min</td>
+                <td><span class="badge badge-warning">Bajo</span></td>
+                <td>Calle 1 #123</td>
+                <td>Juan Pérez</td>
+            </tr>
+            <tr>
+                <td>ORD-002</td>
+                <td>Supermercado B</td>
+                <td>-</td>
+                <td><span class="badge badge-danger">Crítico</span></td>
+                <td>Av. Principal #123</td>
+                <td>María Gómez</td>
+            </tr>
+            <tr>
+                <td>ORD-003</td>
+                <td>Supermercado C</td>
+                <td>15 min</td>
+                <td><span class="badge badge-success">Óptimo</span></td>
+                <td>Plaza Central #12</td>
+                <td>Carlos Rodríguez</td>
+            </tr>
+            <tr>
+                <td>ORD-004</td>
+                <td>Supermercado D</td>
+                <td>1h 10min</td>
+                <td><span class="badge badge-success">Óptimo</span></td>
+                <td>Calle 10 #5432</td>
+                <td>Ana Martínez</td>
+            </tr>
+            <tr>
+                <td>ORD-005</td>
+                <td>Supermercado E</td>
+                <td>2h</td>
+                <td><span class="badge badge-success">Óptimo</span></td>
+                <td>Av. Seguridad #13</td>
+                <td>Pedro Sánchez</td>
+            </tr>
+            <!-- Añadir más filas según sea necesario -->
+        </tbody>
+    </table>
+    
+    <div class="d-flex justify-content-between align-items-center">
+        <p>Mostrando 1 a 5 de 10 productos</p>
+        <nav>
+            <ul class="pagination pagination-sm">
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item"><a class="page-link" href="#">4</a></li>
+                <li class="page-item"><a class="page-link" href="#">5</a></li>
+                <li class="page-item"><a class="page-link" href="#">6</a></li>
+                <li class="page-item"><a class="page-link" href="#">7</a></li>
+                <li class="page-item"><a class="page-link" href="#">8</a></li>
+                <li class="page-item"><a class="page-link" href="#">></a></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>
