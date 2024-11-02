@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from apps.inventario.models import Product
 
 # Create your models here.
 
@@ -26,7 +27,7 @@ class Venta(models.Model):
 
 class DetalleVenta(models.Model):
     venta = models.ForeignKey(Venta, related_name='detalles', on_delete=models.CASCADE)
-    producto = models.ForeignKey('inventario.Producto', on_delete=models.PROTECT)
+    producto = models.ForeignKey(Product, on_delete=models.PROTECT)
     cantidad = models.IntegerField(validators=[MinValueValidator(1)])
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
