@@ -118,6 +118,9 @@ class Venta(models.Model):
 
         super().save(*args, **kwargs)
 
+
+
+# Modelo de detalle de venta
 class DetalleVenta(models.Model):
     """Modelo que representa el detalle de una venta."""
 
@@ -194,3 +197,4 @@ class DetalleVenta(models.Model):
         stock.save()
         super().delete(*args, **kwargs)
         self.venta.save()
+
