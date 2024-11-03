@@ -1,63 +1,69 @@
-{% extends 'inventario/base_inventario.html' %}
+{% extends 'dashboard/base_dashboard.html' %}
 
-{% block inventario_content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Estado del Inventario</h1>
-</div>
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Estado del Inventario</h1>
+    </div>
 
-<!-- Resumen de Stock -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-primary">
-            <div class="card-body">
-                <h5 class="card-title">Total Productos</h5>
-                <p class="card-text display-4">{{ productos.count }}</p>
+    <!-- Resumen de Stock -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Productos</h5>
+                    <p class="card-text display-4">{{ total_productos }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Productos con Stock Bajo</h5>
+                    <p class="card-text display-4">{{ total_stock_bajo }}</p>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-warning">
-            <div class="card-body">
-                <h5 class="card-title">Productos con Stock Bajo</h5>
-                <p class="card-text display-4">{{ productos_stock_bajo.count }}</p>
-            </div>
+
+    <!-- Lista de Productos con Stock Bajo -->
+    {% if productos_stock_bajo %}
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-white">
+            <h5 class="mb-0">Productos que Requieren Atención</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos_stock_bajo %}
+                    <tr>
+                        <td>{{ producto.name }}</td>
+                        <td>{{ producto.get_stock_actual }}</td>
+                        <td>{{ producto.stock_minimo }}</td>
+                        <td>
+                            <a href="{% url 'inventario:product_edit' producto.id %}" 
+                               class="btn btn-sm btn-warning">
+                                Actualizar Stock
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-</div>
-
-<!-- Lista de Productos con Stock Bajo -->
-{% if productos_stock_bajo %}
-<div class="card mb-4">
-    <div class="card-header bg-warning text-white">
-        <h5 class="mb-0">Productos que Requieren Atención</h5>
+    {% else %}
+    <div class="alert alert-success">
+        No hay productos con stock bajo.
     </div>
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Stock Actual</th>
-                    <th>Stock Mínimo</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for producto in productos_stock_bajo %}
-                <tr>
-                    <td>{{ producto.name }}</td>
-                    <td>{{ producto.get_stock_actual }}</td>
-                    <td>{{ producto.stock_minimo }}</td>
-                    <td>
-                        <a href="{% url 'inventario:product_edit' producto.id %}" 
-                           class="btn btn-sm btn-warning">
-                            Actualizar Stock
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %} 
