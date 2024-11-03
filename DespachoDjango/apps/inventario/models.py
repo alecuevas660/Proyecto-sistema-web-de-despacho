@@ -1,231 +1,210 @@
-"""
-Este módulo define los modelos de datos para el sistema de gestión de productos, 
-incluyendo Product, StockVariable, DetalleCompra, OrdenDespacho, SeguimientoEnvio, 
-ReporteEnvios y ReporteFinanciero.
-"""
-
 import uuid
 from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator
+from decimal import Decimal
 
-# Modelo de producto
+class EstadoEnvio:
+    """Opciones para el estado de envío"""
+    PENDIENTE = 'pendiente'
+    EN_TRANSITO = 'en_transito'
+    ENTREGADO = 'entregado'
+    CANCELADO = 'cancelado'
+
+    CHOICES = [
+        (PENDIENTE, 'Pendiente'),
+        (EN_TRANSITO, 'En Tránsito'),
+        (ENTREGADO, 'Entregado'),
+        (CANCELADO, 'Cancelado'),
+    ]
+
 class Product(models.Model):
-    """
-    Modelo que representa un producto en el sistema.
-    
-    Attributes:
-        id (UUIDField): Identificador único del producto.
-        name (CharField): Nombre del producto.
-        description (TextField): Descripción del producto.
-        price (DecimalField): Precio del producto.
-        created_at (DateTimeField): Fecha y hora de creación del producto.
-        updated_at (DateTimeField): Fecha y hora de la última actualización del producto.
-    """
+    """Modelo que representa un producto en el sistema."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        """Devuelve el nombre del producto como representación en cadena."""
-        return str(self.name) if self.name else "Nombre no disponible"
+    name = models.CharField('Nombre', max_length=255)
+    description = models.TextField('Descripción', null=True, blank=True)
+    price = models.DecimalField(
+        'Precio',
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    stock_minimo = models.PositiveIntegerField('Stock Mínimo', default=0)
+    activo = models.BooleanField('Activo', default=True)
+    created_at = models.DateTimeField('Fecha de Creación', auto_now_add=True)
+    updated_at = models.DateTimeField('Fecha de Actualización', auto_now=True)
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo Product.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-            ordering (list): Orden predeterminado para las consultas.
-        """
         db_table = 'products'
-        verbose_name = 'Product'
-        verbose_name_plural = 'Products'
+        verbose_name = 'Producto'
+        verbose_name_plural = 'Productos'
         ordering = ['-created_at']
 
+    def __str__(self):
+        return self.name
 
-# Modelo de stock variable
+    def get_stock_actual(self):
+        """Retorna el stock actual del producto"""
+        return self.stock_variables.latest('fecha_actualizacion').cantidad_stock if self.stock_variables.exists() else 0
+
 class StockVariable(models.Model):
-    """
-    Modelo que representa la cantidad de stock de un producto.
-    
-    Attributes:
-        id (UUIDField): Identificador único del stock variable.
-        id_producto (ForeignKey): Relación con el modelo Product.
-        cantidad_stock (IntegerField): Cantidad de stock disponible.
-        fecha_actualizacion (DateTimeField): 
-        Fecha y hora de la última actualización del stock.
-    """
+    """Modelo que representa el historial de stock de un producto."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE,
-                                    related_name='stock_variables')
-    """Linea de arriba muy larga y se decidió acortar"""
-    cantidad_stock = models.IntegerField()
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    producto = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='stock_variables',
+        verbose_name='Producto'
+    )
+    cantidad_stock = models.PositiveIntegerField('Cantidad en Stock')
+    fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
+    motivo = models.CharField('Motivo de Actualización', max_length=255, blank=True)
+
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo StockVariable.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
         db_table = 'stock_variable'
         verbose_name = 'Stock Variable'
         verbose_name_plural = 'Stock Variables'
+        ordering = ['-fecha_actualizacion']
 
+    def __str__(self):
+        return f"{self.producto.name} - Stock: {self.cantidad_stock}"
 
-# Modelo de detalle de compra
 class DetalleCompra(models.Model):
-    """
-    Modelo que representa los detalles de una compra.
-    
-    Attributes:
-        id (UUIDField): Identificador único del detalle de compra.
-        fecha_compra (DateTimeField): Fecha y hora de la compra.
-        cantidad_productos (IntegerField): Cantidad de productos comprados.
-        id_producto (ForeignKey): Relación con el modelo Product.
-    """
+    """Modelo que representa los detalles de una compra."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    fecha_compra = models.DateTimeField(auto_now_add=True)
-    cantidad_productos = models.IntegerField()
-    id_producto = models.ForeignKey(Product, on_delete=models.CASCADE,
-                                    related_name='detalles_compra')
-    """Linea de arriba muy larga y se decidió acortar"""
+
+    producto = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name='detalles_compra',
+        verbose_name='Producto'
+    )
+    cantidad_productos = models.PositiveIntegerField('Cantidad')
+    precio_unitario = models.DecimalField(
+        'Precio Unitario',
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))]
+    )
+    fecha_compra = models.DateTimeField('Fecha de Compra', auto_now_add=True)
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo DetalleCompra.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
         db_table = 'detalle_compra'
-        verbose_name = 'Detalle Compra'
-        verbose_name_plural = 'Detalles Compra'
+        verbose_name = 'Detalle de Compra'
+        verbose_name_plural = 'Detalles de Compras'
 
+    def __str__(self):
+        return f"Compra de {self.cantidad_productos} {self.producto.name}"
 
-# Modelo de orden de despacho
+    @property
+    def total(self):
+        """Calcula el total de la compra"""
+        return self.cantidad_productos * self.precio_unitario
+
 class OrdenDespacho(models.Model):
-    """
-    Modelo que representa una orden de despacho.
-    
-    Attributes:
-        id (UUIDField): Identificador único de la orden de despacho.
-        id_cliente (ForeignKey): Relación con el modelo Cliente.
-        id_tran (ForeignKey): Relación con el modelo Transportista.
-        id_compra (ForeignKey): Relación con el modelo DetalleCompra.
-    """
+    """Modelo que representa una orden de despacho."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_cliente = models.ForeignKey('useraccount.Cliente', on_delete=models.CASCADE)
-    id_tran = models.ForeignKey('useraccount.Transportista', on_delete=models.CASCADE)
-    id_compra = models.ForeignKey(DetalleCompra, on_delete=models.CASCADE)
+    cliente = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='ordenes_despacho',
+        limit_choices_to={'role': 'client'},
+        verbose_name='Cliente'
+    )
+    transportista = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='transportes',
+        limit_choices_to={'role': 'transport'},
+        verbose_name='Transportista'
+    )
+    compra = models.ForeignKey(
+        DetalleCompra,
+        on_delete=models.PROTECT,
+        related_name='ordenes',
+        verbose_name='Compra'
+    )
+    direccion_entrega = models.TextField('Dirección de Entrega')
+    fecha_creacion = models.DateTimeField('Fecha de Creación', auto_now_add=True)
+    observaciones = models.TextField('Observaciones', blank=True)
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo OrdenDespacho.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
         db_table = 'orden_despacho'
         verbose_name = 'Orden de Despacho'
         verbose_name_plural = 'Órdenes de Despacho'
+        ordering = ['-fecha_creacion']
 
+    def __str__(self):
+        return f"Orden #{self.id} - Cliente: {self.cliente.get_full_name()}"
 
-# Modelo de seguimiento de envío
 class SeguimientoEnvio(models.Model):
-    """
-    Modelo que representa el seguimiento de un envío.
-    
-    Attributes:
-        id (UUIDField): Identificador único del seguimiento de envío.
-        estado_envio (CharField): Estado actual del envío.
-        id_cliente (ForeignKey): Relación con el modelo Cliente.
-        id_orden (ForeignKey): Relación con el modelo OrdenDespacho.
-    """
+    """Modelo que representa el seguimiento de un envío."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    estado_envio = models.CharField(max_length=100)
-    id_cliente = models.ForeignKey('useraccount.Cliente', on_delete=models.CASCADE)
-    id_orden = models.ForeignKey(OrdenDespacho, on_delete=models.CASCADE)
+    orden = models.ForeignKey(
+        OrdenDespacho,
+        on_delete=models.CASCADE,
+        related_name='seguimientos',
+        verbose_name='Orden de Despacho'
+    )
+    estado_envio = models.CharField(
+        'Estado',
+        max_length=20,
+        choices=EstadoEnvio.CHOICES,
+        default=EstadoEnvio.PENDIENTE
+    )
+    ubicacion_actual = models.CharField('Ubicación Actual', max_length=255, blank=True)
+    comentarios = models.TextField('Comentarios', blank=True)
+    fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo SeguimientoEnvio.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
         db_table = 'seguimiento_envio'
         verbose_name = 'Seguimiento de Envío'
         verbose_name_plural = 'Seguimientos de Envíos'
+        ordering = ['-fecha_actualizacion']
 
+    def __str__(self):
+        return f"Seguimiento de Orden #{self.orden.id} - {self.get_estado_envio_display()}"
 
-# Modelos de reporte
 class ReporteEnvios(models.Model):
-    """
-    Modelo que representa un reporte de envíos.
-    
-    Attributes:
-        id (UUIDField): Identificador único del reporte de envíos.
-        id_cliente (ForeignKey): Relación con el modelo Cliente.
-        cantidad_envios (IntegerField): Cantidad de envíos realizados.
-        fecha_reporte (DateField): Fecha del reporte.
-    """
+    """Modelo que representa un reporte de envíos."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    id_cliente = models.ForeignKey('useraccount.Cliente', on_delete=models.CASCADE)
-    cantidad_envios = models.IntegerField()
-    fecha_reporte = models.DateField()
+    fecha_inicio = models.DateField('Fecha Inicial')
+    fecha_fin = models.DateField('Fecha Final')
+    total_envios = models.PositiveIntegerField('Total de Envíos', default=0)
+    envios_completados = models.PositiveIntegerField('Envíos Completados', default=0)
+    envios_pendientes = models.PositiveIntegerField('Envíos Pendientes', default=0)
+    fecha_generacion = models.DateTimeField('Fecha de Generación', auto_now_add=True)
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo ReporteEnvios.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
         db_table = 'reporte_envios'
-        verbose_name = 'Reporte de Envío'
+        verbose_name = 'Reporte de Envíos'
         verbose_name_plural = 'Reportes de Envíos'
+        ordering = ['-fecha_generacion']
 
+    def __str__(self):
+        return f"Reporte de Envíos {self.fecha_inicio} - {self.fecha_fin}"
 
 class ReporteFinanciero(models.Model):
-    """
-    Modelo que representa un reporte financiero de ventas.
-    
-    Attributes:
-        id (UUIDField): Identificador único del reporte financiero.
-        categoria_producto (CharField): Categoría del producto vendido.
-        cantidad_vendida (IntegerField): Cantidad de productos vendidos.
-        fecha_reporte (DateField): Fecha del reporte.
-    """
+    """Modelo que representa un reporte financiero."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    categoria_producto = models.CharField(max_length=100)
-    cantidad_vendida = models.IntegerField()
-    fecha_reporte = models.DateField()
+    fecha_inicio = models.DateField('Fecha Inicial')
+    fecha_fin = models.DateField('Fecha Final')
+    total_ventas = models.DecimalField(
+        'Total Ventas',
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+    total_envios = models.PositiveIntegerField('Total Envíos', default=0)
+    fecha_generacion = models.DateTimeField('Fecha de Generación', auto_now_add=True)
 
     class Meta:
-        """
-        Configuración de la tabla para el modelo ReporteFinanciero.
-        
-        Attributes:
-            db_table (str): Nombre de la tabla en la base de datos.
-            verbose_name (str): Nombre legible del modelo en singular.
-            verbose_name_plural (str): Nombre legible del modelo en plural.
-        """
         db_table = 'reporte_financiero'
         verbose_name = 'Reporte Financiero'
         verbose_name_plural = 'Reportes Financieros'
+        ordering = ['-fecha_generacion']
+
+    def __str__(self):
+        return f"Reporte Financiero {self.fecha_inicio} - {self.fecha_fin}"
