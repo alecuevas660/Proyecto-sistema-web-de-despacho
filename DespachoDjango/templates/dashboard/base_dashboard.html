@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="{% url 'home:home' %}" class="text-decoration-none">
+                <h4 class="text-primary mb-4">
+                    <i class="fas fa-clinic-medical"></i> Farmacia
+                </h4>
+            </a>
+        </div>
+        
+        <div class="user-info mb-4">
+            {% if user.is_authenticated %}
+                <div class="d-flex align-items-center mb-3">
+                    <div class="user-avatar me-2">
+                        {% if user.avatar %}
+                            <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded-circle" width="40">
+                        {% else %}
+                            <i class="fas fa-user-circle fa-2x"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <small class="d-block text-muted">Bienvenido</small>
+                        <strong>{{ user.get_full_name }}</strong>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+                       href="{% url 'home:home' %}">
+                        <i class="fas fa-home me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if 'inventario' in request.path %}active{% endif %}"
+                       href="#" id="inventarioDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-box me-2"></i> Inventario
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'inventario:inventario_list' %}">
+                                Estado del Inventario
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'inventario:product_list' %}">
+                                Productos
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'ventas' in request.path %}active{% endif %}"
+                       href="#">
+                        <i class="fas fa-shopping-cart me-2"></i> Ventas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'reportes' in request.path %}active{% endif %}"
+                       href="#">
+                        <i class="fas fa-chart-bar me-2"></i> Reportes
+                    </a>
+                </li>
+                {% if user.is_staff %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'admin:index' %}">
+                        <i class="fas fa-cog me-2"></i> Administración
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <div class="sidebar-footer">
+            {% if user.is_authenticated %}
+                <a href="{% url 'logout' %}" class="nav-link text-danger">
+                    <i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}" class="nav-link">
+                    <i class="fas fa-sign-in-alt me-2"></i> Iniciar Sesión
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content flex-grow-1">
+        {% if messages %}
+            <div class="container-fluid mt-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="container-fluid py-4">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
