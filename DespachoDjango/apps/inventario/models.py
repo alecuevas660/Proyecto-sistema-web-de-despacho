@@ -50,6 +50,7 @@ class Product(models.Model):
 class StockVariable(models.Model):
     """Modelo que representa el historial de stock de un producto."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     producto = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
@@ -59,6 +60,7 @@ class StockVariable(models.Model):
     cantidad_stock = models.PositiveIntegerField('Cantidad en Stock')
     fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
     motivo = models.CharField('Motivo de Actualización', max_length=255, blank=True)
+
 
     class Meta:
         db_table = 'stock_variable'
@@ -72,6 +74,7 @@ class StockVariable(models.Model):
 class DetalleCompra(models.Model):
     """Modelo que representa los detalles de una compra."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     producto = models.ForeignKey(
         Product,
         on_delete=models.PROTECT,
