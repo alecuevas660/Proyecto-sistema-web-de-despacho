@@ -39,6 +39,7 @@
                         <th>Producto</th>
                         <th>Stock Actual</th>
                         <th>Stock Mínimo</th>
+                        <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -49,9 +50,14 @@
                         <td>{{ producto.get_stock_actual }}</td>
                         <td>{{ producto.stock_minimo }}</td>
                         <td>
-                            <a href="{% url 'inventario:product_edit' producto.id %}" 
+                            {% with status=producto.get_stock_status %}
+                                <span class="badge bg-{{ status.1 }}">{{ status.0 }}</span>
+                            {% endwith %}
+                        </td>
+                        <td>
+                            <a href="{% url 'inventario:stock_update' producto.id %}" 
                                class="btn btn-sm btn-warning">
-                                Actualizar Stock
+                                <i class="fas fa-sync-alt"></i> Actualizar Stock
                             </a>
                         </td>
                     </tr>

@@ -1,13 +1,16 @@
 {% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Productos</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
+            {% if perms.inventario.add_product %}
             <a href="{% url 'inventario:product_create' %}" class="btn btn-sm btn-primary">
                 <i class="fas fa-plus"></i> Nuevo Producto
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -17,13 +20,25 @@
             <form method="get" class="d-flex gap-2">
                 <input type="text" name="search" class="form-control" 
                        placeholder="Buscar productos..." value="{{ search }}">
+                
+                <select name="categoria" class="form-select" style="width: auto;">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" 
+                            {% if categoria_filter == categoria.id|stringformat:"s" %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+
                 <select name="stock" class="form-select" style="width: auto;">
                     <option value="">Todos los stocks</option>
                     <option value="bajo" {% if stock_filter == 'bajo' %}selected{% endif %}>Stock Bajo</option>
                     <option value="normal" {% if stock_filter == 'normal' %}selected{% endif %}>Stock Normal</option>
                 </select>
+
                 <button type="submit" class="btn btn-primary">Buscar</button>
-                {% if search or stock_filter %}
+                {% if search or stock_filter or categoria_filter %}
                     <a href="{% url 'inventario:product_list' %}" class="btn btn-secondary">Limpiar</a>
                 {% endif %}
             </form>
@@ -37,41 +52,51 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
-                        <th>Descripción</th>
+                        <th>Categoría</th>
                         <th>Precio</th>
                         <th>Stock Actual</th>
                         <th>Stock Mínimo</th>
                         <th>Estado</th>
+                        {% if perms.inventario.change_product or perms.inventario.delete_product %}
                         <th>Acciones</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for producto in productos %}
                     <tr>
                         <td>{{ producto.name }}</td>
-                        <td>{{ producto.description|truncatechars:50 }}</td>
+                        <td>{{ producto.categoria.nombre }}</td>
                         <td>${{ producto.price }}</td>
                         <td>{{ producto.get_stock_actual }}</td>
                         <td>{{ producto.stock_minimo }}</td>
                         <td>
-                            {% if producto.get_stock_actual <= producto.stock_minimo %}
-                                <span class="badge bg-danger">Stock Bajo</span>
-                            {% else %}
-                                <span class="badge bg-success">Normal</span>
-                            {% endif %}
+                            {% with status=producto.get_stock_status %}
+                                <span class="badge bg-{{ status.1 }}">{{ status.0 }}</span>
+                            {% endwith %}
                         </td>
+                        {% if perms.inventario.change_product or perms.inventario.delete_product %}
                         <td>
                             <div class="btn-group">
+                                {% if perms.inventario.change_product %}
                                 <a href="{% url 'inventario:product_edit' producto.id %}" 
                                    class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="{% url 'inventario:product_delete' producto.id %}" 
-                                   class="btn btn-sm btn-outline-danger">
+                                {% endif %}
+                                {% if perms.inventario.delete_product %}
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal"
+                                        data-product-id="{{ producto.id }}"
+                                        data-product-name="{{ producto.name }}">
                                     <i class="fas fa-trash"></i>
-                                </a>
+                                </button>
+                                {% endif %}
                             </div>
                         </td>
+                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>
@@ -120,4 +145,30 @@
     </nav>
     {% endif %}
 </div>
+
+<!-- Modal de Eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que deseas eliminar el producto "<span id="productName"></span>"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/inventario/product-list.js' %}"></script>
 {% endblock %} 

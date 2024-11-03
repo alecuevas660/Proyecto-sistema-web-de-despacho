@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Product, StockVariable, DetalleCompra, OrdenDespacho, SeguimientoEnvio, ReporteEnvios, ReporteFinanciero
+from .models import Product, StockVariable, DetalleCompra, OrdenDespacho, SeguimientoEnvio, ReporteEnvios, ReporteFinanciero, Categoria
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -25,3 +25,9 @@ class SeguimientoEnvioAdmin(admin.ModelAdmin):
 admin.site.register(DetalleCompra)
 admin.site.register(ReporteEnvios)
 admin.site.register(ReporteFinanciero)
+
+@admin.register(Categoria)
+class CategoriaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'activo', 'created_at')
+    search_fields = ('nombre', 'descripcion')
+    list_filter = ('activo',)

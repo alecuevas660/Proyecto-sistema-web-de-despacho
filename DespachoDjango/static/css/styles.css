@@ -23,16 +23,14 @@ body {
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
-    background-color: var(--sidebar-bg);
     height: 100vh;
-    padding: 1.5rem;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
     position: fixed;
     left: 0;
     top: 0;
     z-index: 1000;
+    background-color: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
 }
 
 .sidebar-header {
@@ -233,4 +231,92 @@ body {
 .alert {
     border: none;
     border-radius: 0.5rem;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+    width: 100%;
+}
+
+.nav-item {
+    width: 100%;
+}
+
+/* Dropdown específico del sidebar */
+.sidebar .nav-item .collapse,
+.sidebar .nav-item .collapsing {
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+    border-left: 2px solid var(--primary-color);
+    background-color: rgba(13, 110, 253, 0.05);
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.sidebar .nav-item .collapse .nav-link,
+.sidebar .nav-item .collapsing .nav-link {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Ajuste para el ícono de flecha */
+.sidebar .nav-link[data-bs-toggle="collapse"] {
+    position: relative;
+}
+
+.sidebar .nav-link[data-bs-toggle="collapse"]::after {
+    content: '\f107';  /* Ícono de flecha de FontAwesome */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.sidebar .nav-link[data-bs-toggle="collapse"][aria-expanded="true"]::after {
+    transform: rotate(180deg);
+}
+
+/* Ajuste para el contenedor principal del sidebar */
+.sidebar-content {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.2) transparent;
+}
+
+.sidebar-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 20px;
+}
+
+/* Indicador visual para el menú activo */
+.sidebar .nav-item.active > .nav-link {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.sidebar .nav-item.active .collapse,
+.sidebar .nav-item.active .collapsing {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Asegurar que el footer del sidebar se mantenga abajo */
+.sidebar-footer {
+    position: sticky;
+    bottom: 0;
+    background-color: var(--sidebar-bg);
+    padding: 1rem;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    margin-top: auto;
 }
