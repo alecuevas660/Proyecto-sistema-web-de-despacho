@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(*xt#ssqjx5ef%j@*0*d1mflr96pmt)_nfc_j#x2f6g6(d!on5'
+SECRET_KEY = '!)f6=j6csail5+jligq(^joe@!7se2f2g(6e#*&2!&o33f@#$8'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -125,9 +125,17 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 
 # Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@tudominio.com'
-EMAIL_SUBJECT_PREFIX = '[Tu Proyecto] '
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'test.dummy4520@gmail.com'
+EMAIL_HOST_PASSWORD = 'uyvr oron kbwu mtqz'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+EMAIL_SUBJECT_PREFIX = '[Test mail]'
+
 
 # Messages configuration
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
@@ -181,3 +189,12 @@ REQUIRED_DIRS = [
 for directory in REQUIRED_DIRS:
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',  # Para respuestas JSON
+        'rest_framework.renderers.BrowsableAPIRenderer',  # Opcional, si necesitas la vista navegable de DRF
+    ],
+}
