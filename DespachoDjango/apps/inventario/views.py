@@ -277,50 +277,171 @@ class StockUpdateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return reverse_lazy('inventario:inventario_list')
 
 def exportar_inventario(request):
-    # Crear un nuevo libro de trabajo
     wb = Workbook()
-    ws = wb.active
-    ws.title = "Reporte de Inventario"
+    
+    # 1. Hoja de Resumen General
+    ws_resumen = wb.active
+    ws_resumen.title = "Resumen General"
+    
+    # Encabezado con fecha del reporte
+    ws_resumen.append(['REPORTE DE INVENTARIO'])
+    ws_resumen.append(['Fecha de generación:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+    ws_resumen.append([])  # Línea en blanco
 
-    # Agregar encabezados
-    headers = ['Código', 'Nombre', 'Categoría', 'Stock Actual', 'Precio', 'Última Actualización']
-    ws.append(headers)
+    # Estadísticas generales
+    total_productos = Product.objects.count()
+    total_categorias = Categoria.objects.filter(activo=True).count()
+    
+    # Modificamos la consulta para usar el último stock registrado
+    productos_stock_bajo = sum(1 for producto in Product.objects.all() 
+                             if producto.get_stock_actual() < producto.stock_minimo)
+    
+    # Calculamos el valor total usando el stock actual
+    valor_total_inventario = sum(
+        producto.get_stock_actual() * producto.price 
+        for producto in Product.objects.all()
+    )
 
-    # Obtener todos los productos
+    estadisticas = [
+        ['Total de Productos:', total_productos],
+        ['Categorías Activas:', total_categorias],
+        ['Productos con Stock Bajo:', productos_stock_bajo],
+        ['Valor Total del Inventario:', f"${valor_total_inventario:,.2f}"],
+        []  # Línea en blanco
+    ]
+    for stat in estadisticas:
+        ws_resumen.append(stat)
+
+    # 2. Hoja de Inventario Detallado
+    ws_inventario = wb.create_sheet("Inventario Detallado")
+    headers_inventario = [
+        'Código', 
+        'Nombre', 
+        'Categoría',
+        'Stock Actual',
+        'Stock Mínimo',
+        'Estado Stock',
+        'Precio Unitario',
+        'Valor Total',
+        'Última Actualización',
+        'Ubicación',
+        'Notas'
+    ]
+    ws_inventario.append(headers_inventario)
+
     productos = Product.objects.all().select_related('categoria')
-
-    # Agregar datos
     for producto in productos:
-        ws.append([
-            producto.codigo,
-            producto.nombre,
+        stock_actual = producto.get_stock_actual()
+        estado_stock = 'ÓPTIMO'
+        if stock_actual < producto.stock_minimo:
+            estado_stock = 'CRÍTICO'
+        elif stock_actual < (producto.stock_minimo * 1.5):
+            estado_stock = 'BAJO'
+
+        ultima_actualizacion = producto.stock_variables.order_by('-created_at').first()
+
+        ws_inventario.append([
+            producto.codigo if hasattr(producto, 'codigo') else 'N/A',
+            producto.name,
             producto.categoria.nombre if producto.categoria else 'Sin categoría',
-            producto.stock,
-            producto.precio,
-            producto.updated_at.strftime('%Y-%m-%d %H:%M:%S') if producto.updated_at else 'N/A'
+            stock_actual,
+            producto.stock_minimo,
+            estado_stock,
+            producto.price,
+            stock_actual * producto.price,
+            ultima_actualizacion.created_at.strftime('%Y-%m-%d %H:%M:%S') if ultima_actualizacion else 'N/A',
+            producto.ubicacion if hasattr(producto, 'ubicacion') else 'N/A',
+            producto.description or ''
         ])
 
-    # Ajustar el ancho de las columnas
-    for column in ws.columns:
-        max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            except:
-                pass
-        adjusted_width = (max_length + 2)
-        ws.column_dimensions[column_letter].width = adjusted_width
+    # 3. Hoja de Productos Críticos
+    ws_criticos = wb.create_sheet("Productos Críticos")
+    headers_criticos = [
+        'Código',
+        'Nombre',
+        'Stock Actual',
+        'Stock Mínimo',
+        'Diferencia',
+        'Días sin Reposición',
+        'Precio Unitario',
+        'Valor a Reponer'
+    ]
+    ws_criticos.append(headers_criticos)
 
-    # Crear la respuesta HTTP con el archivo Excel
+    # Filtramos productos críticos usando get_stock_actual()
+    productos_criticos = [p for p in Product.objects.all() 
+                         if p.get_stock_actual() < p.stock_minimo]
+    
+    for producto in productos_criticos:
+        stock_actual = producto.get_stock_actual()
+        diferencia = producto.stock_minimo - stock_actual
+        ultima_actualizacion = producto.stock_variables.order_by('-created_at').first()
+        dias_sin_reposicion = (datetime.now().date() - ultima_actualizacion.created_at.date()).days if ultima_actualizacion else 0
+        
+        ws_criticos.append([
+            producto.codigo if hasattr(producto, 'codigo') else 'N/A',
+            producto.name,
+            stock_actual,
+            producto.stock_minimo,
+            diferencia,
+            dias_sin_reposicion,
+            producto.price,
+            diferencia * producto.price
+        ])
+
+    # 4. Hoja de Análisis por Categoría
+    ws_categorias = wb.create_sheet("Análisis por Categoría")
+    headers_categorias = [
+        'Categoría',
+        'Total Productos',
+        'Productos Stock Bajo',
+        'Valor Total Inventario',
+        'Valor Promedio por Producto'
+    ]
+    ws_categorias.append(headers_categorias)
+
+    categorias = Categoria.objects.filter(activo=True)
+    for categoria in categorias:
+        productos_cat = Product.objects.filter(categoria=categoria)
+        total_productos_cat = productos_cat.count()
+        
+        # Calculamos productos con stock bajo
+        productos_bajos_cat = sum(1 for p in productos_cat 
+                                if p.get_stock_actual() < p.stock_minimo)
+        
+        # Calculamos valor total del inventario para la categoría
+        valor_total_cat = sum(p.get_stock_actual() * p.price for p in productos_cat)
+        valor_promedio = valor_total_cat / total_productos_cat if total_productos_cat > 0 else 0
+
+        ws_categorias.append([
+            categoria.nombre,
+            total_productos_cat,
+            productos_bajos_cat,
+            valor_total_cat,
+            valor_promedio
+        ])
+
+    # Aplicar formato a todas las hojas
+    for ws in wb.worksheets:
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Crear la respuesta HTTP
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-    response['Content-Disposition'] = 'attachment; filename=Reporte_Inventario_{}.xlsx'.format(
+    response['Content-Disposition'] = 'attachment; filename=Reporte_Inventario_Completo_{}.xlsx'.format(
         datetime.now().strftime('%Y%m%d_%H%M%S')
     )
 
-    # Guardar el libro de trabajo
     wb.save(response)
     return response
