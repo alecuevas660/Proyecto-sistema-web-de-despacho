@@ -1,0 +1,16 @@
+body {
+    display: flex;
+}
+.sidebar {
+    min-width: 250px;
+    background-color: #f8f9fa;
+    height: 100vh;
+    padding: 1rem;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+.sidebar h4 {
+    margin-bottom: 1rem;
+}
+.nav-link {
+    font-size: 1.1rem;
+}
