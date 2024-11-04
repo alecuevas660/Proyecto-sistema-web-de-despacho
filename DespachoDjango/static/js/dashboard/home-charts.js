@@ -3,28 +3,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const ventasCtx = document.getElementById('ventasChart').getContext('2d');
     const productosCtx = document.getElementById('productosChart').getContext('2d');
 
-    // Gráfico de ventas
-    new Chart(ventasCtx, {
+    // Gráfico de Ventas Mensuales
+    const ventasChart = new Chart(ventasCtx, {
         type: 'line',
         data: {
-            labels: ventasLabels, // Definido en el template
+            labels: ventasLabels,
             datasets: [{
                 label: 'Ventas',
-                data: ventasData, // Definido en el template
+                data: ventasData,
+                fill: false,
                 borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1,
-                fill: true,
-                backgroundColor: 'rgba(75, 192, 192, 0.1)'
+                tension: 0.1
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
             scales: {
                 y: {
                     beginAtZero: true
@@ -33,20 +27,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Gráfico de productos más vendidos
-    new Chart(productosCtx, {
+    // Gráfico de Productos más Vendidos
+    const productosChart = new Chart(productosCtx, {
         type: 'doughnut',
         data: {
-            labels: productosLabels, // Definido en el template
+            labels: productosLabels,
             datasets: [{
-                data: productosData, // Definido en el template
+                data: productosData,
                 backgroundColor: [
-                    'rgba(255, 99, 132, 0.8)',
-                    'rgba(54, 162, 235, 0.8)',
-                    'rgba(255, 206, 86, 0.8)',
-                    'rgba(75, 192, 192, 0.8)',
-                    'rgba(153, 102, 255, 0.8)'
-                ]
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 1
             }]
         },
         options: {

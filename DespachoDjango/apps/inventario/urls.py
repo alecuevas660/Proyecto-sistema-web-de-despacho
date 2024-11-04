@@ -33,4 +33,7 @@ urlpatterns = [
     path('categoria/<uuid:pk>/editar/', views.CategoriaUpdateView.as_view(), name='category_edit'),
     path('producto/<uuid:pk>/stock/', views.StockUpdateView.as_view(), name='stock_update'),
     path('api/', include(router.urls))
+    path('exportar/', views.exportar_inventario, name='exportar_inventario'),
+    path('configurar-reporte/', views.configurar_reporte, name='configurar_reporte'),
+
 ]

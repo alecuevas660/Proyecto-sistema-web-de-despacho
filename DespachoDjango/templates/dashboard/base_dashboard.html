@@ -145,7 +145,7 @@
                     <!-- Usuarios -->
                     {% if user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link"
+                        <a class="nav-link {% if request.resolver_match.namespace == 'users' %}active{% endif %}"
                            href="#usuariosSubmenu"
                            data-bs-toggle="collapse"
                            role="button"
@@ -153,21 +153,18 @@
                            aria-controls="usuariosSubmenu">
                             <i class="fas fa-users"></i> Usuarios
                         </a>
-                        <div class="collapse" id="usuariosSubmenu">
+                        <div class="collapse {% if request.resolver_match.namespace == 'users' %}show{% endif %}" id="usuariosSubmenu">
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'client_list' %}active{% endif %}" 
+                                       href="{% url 'users:client_list' %}">
                                         <i class="fas fa-user-friends"></i> Clientes
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'employee_list' %}active{% endif %}" 
+                                       href="{% url 'users:employee_list' %}">
                                         <i class="fas fa-user-tie"></i> Empleados
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="#">
-                                        <i class="fas fa-user-plus"></i> Nuevo Usuario
                                     </a>
                                 </li>
                             </ul>
@@ -186,9 +183,12 @@
             {% endif %}
 
             <div class="sidebar-footer">
-                <a href="{% url 'logout' %}" class="btn btn-outline-danger w-100">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </a>
+                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger w-100">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </form>
             </div>
         </div>
     </div>
