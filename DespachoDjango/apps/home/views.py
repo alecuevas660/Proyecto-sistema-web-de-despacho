@@ -1,56 +1,68 @@
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from apps.inventario.models import Product, Categoria
-from django.db.models import F, Count
-import json
-from datetime import datetime, timedelta
+from django.utils import timezone
+from django.db.models import Count, Sum, Q
+from apps.inventario.models import Product, Categoria, StockVariable
+from apps.users.models import User, ClienteProfile
+from datetime import timedelta
 
 class HomeView(LoginRequiredMixin, TemplateView):
+    """Vista principal del dashboard"""
     template_name = 'dashboard/home.html'
+    login_url = 'login'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        now = timezone.now()
         
-        # Estadísticas básicas
+        # Obtener datos reales del inventario
         productos = Product.objects.all()
-        context['total_productos'] = productos.count()
-        context['categorias_activas'] = Categoria.objects.filter(activo=True).count()
+        productos_stock_bajo = [p for p in productos if p.get_stock_actual() < p.stock_minimo]
         
-        # Productos con stock bajo (usando la misma lógica que en InventarioListView)
-        productos_stock_bajo = []
-        for producto in productos:
-            stock_actual = producto.get_stock_actual()
-            if stock_actual < producto.stock_minimo:
-                productos_stock_bajo.append(producto)
+        # Obtener últimos cambios de stock
+        ultimos_cambios_stock = StockVariable.objects.select_related(
+            'producto'
+        ).order_by('-id')[:5]  # Usamos id para ordenar por más reciente
         
-        context['productos_stock_bajo'] = len(productos_stock_bajo)
-        
-        # Datos para gráficos (ejemplo con datos de prueba)
-        context['labels_ventas'] = json.dumps(['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'])
-        context['datos_ventas'] = json.dumps([12, 19, 3, 5, 2, 3])
-        
-        context['labels_productos'] = json.dumps(['Producto A', 'Producto B', 'Producto C', 'Producto D', 'Producto E'])
-        context['datos_productos'] = json.dumps([12, 19, 3, 5, 2])
-        
-        # Datos de ejemplo para alertas y actividad
-        context['alertas'] = [
-            {
-                'titulo': 'Stock Bajo',
-                'mensaje': f'Hay {len(productos_stock_bajo)} productos que requieren reposición',
-                'tipo': 'warning',
-                'fecha': datetime.now() - timedelta(hours=2)
-            },
-            # Más alertas...
-        ]
-        
-        context['actividades_recientes'] = [
-            {
-                'descripcion': 'Actualización de Stock',
-                'detalles': 'Se actualizó el stock del producto X',
-                'usuario': 'Admin',
-                'fecha': datetime.now() - timedelta(minutes=30)
-            },
-            # Más actividades...
-        ]
+        # Datos para el dashboard
+        context.update({
+            'title': 'Dashboard',
+            'total_productos': productos.count(),
+            'categorias_activas': Categoria.objects.filter(activo=True).count(),
+            'productos_stock_bajo': len(productos_stock_bajo),
+            'total_clientes': User.objects.filter(role='client').count(),
+            
+            # Alertas basadas en productos con stock bajo
+            'alertas': [
+                {
+                    'titulo': f'Stock Bajo en {p.name}',
+                    'mensaje': f'El producto está por debajo del mínimo requerido ({p.stock_minimo} unidades)',
+                    'tipo': 'warning',
+                    'fecha': now
+                }
+                for p in productos_stock_bajo[:5]  # Mostrar solo las 5 primeras alertas
+            ],
+            
+            # Datos para los gráficos
+            'labels_productos': [p.name for p in productos[:5]],
+            'datos_productos': [p.get_stock_actual() for p in productos[:5]],
+            
+            # Actividad reciente basada en cambios de stock
+            'actividades_recientes': [
+                {
+                    'descripcion': f'Actualización de stock: {cambio.producto.name}',
+                    'detalles': f'Nuevo stock: {cambio.cantidad_stock} unidades. Motivo: {cambio.motivo}',
+                    'usuario': cambio.producto.categoria.nombre if cambio.producto.categoria else 'Sin categoría',
+                    'fecha': now - timedelta(hours=i)  # Simulamos fechas recientes
+                }
+                for i, cambio in enumerate(ultimos_cambios_stock)
+            ] if ultimos_cambios_stock else [],
+
+            # Datos adicionales para las tarjetas del dashboard
+            'ordenes_pendientes': 0,  # Esto se actualizará cuando tengamos el modelo de órdenes
+            'ordenes_hoy': 0,
+            'ventas_dia': 0,
+            'porcentaje_incremento': 0,
+        })
         
         return context
