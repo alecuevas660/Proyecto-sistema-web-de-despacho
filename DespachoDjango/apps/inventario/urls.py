@@ -13,4 +13,5 @@ urlpatterns = [
     path('categoria/crear/', views.CategoriaCreateView.as_view(), name='category_create'),
     path('categoria/<uuid:pk>/editar/', views.CategoriaUpdateView.as_view(), name='category_edit'),
     path('producto/<uuid:pk>/stock/', views.StockUpdateView.as_view(), name='stock_update'),
+    path('exportar/', views.exportar_inventario, name='exportar_inventario'),
 ]

@@ -7,11 +7,13 @@ from django.db.models import Q, F
 from .models import Product, StockVariable, Categoria
 from django.contrib import messages
 from .forms import ProductForm, StockUpdateForm
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
+from openpyxl import Workbook
+from datetime import datetime
 
 # Create your views here.
 
@@ -273,3 +275,52 @@ class StockUpdateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse_lazy('inventario:inventario_list')
+
+def exportar_inventario(request):
+    # Crear un nuevo libro de trabajo
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte de Inventario"
+
+    # Agregar encabezados
+    headers = ['Código', 'Nombre', 'Categoría', 'Stock Actual', 'Precio', 'Última Actualización']
+    ws.append(headers)
+
+    # Obtener todos los productos
+    productos = Product.objects.all().select_related('categoria')
+
+    # Agregar datos
+    for producto in productos:
+        ws.append([
+            producto.codigo,
+            producto.nombre,
+            producto.categoria.nombre if producto.categoria else 'Sin categoría',
+            producto.stock,
+            producto.precio,
+            producto.updated_at.strftime('%Y-%m-%d %H:%M:%S') if producto.updated_at else 'N/A'
+        ])
+
+    # Ajustar el ancho de las columnas
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Crear la respuesta HTTP con el archivo Excel
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=Reporte_Inventario_{}.xlsx'.format(
+        datetime.now().strftime('%Y%m%d_%H%M%S')
+    )
+
+    # Guardar el libro de trabajo
+    wb.save(response)
+    return response
