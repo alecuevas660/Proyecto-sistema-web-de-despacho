@@ -10,15 +10,12 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('inventario/', include('apps.inventario.urls', namespace='inventario')),
     
-    # Rutas de autenticación y usuarios
+    # Rutas de autenticación
     path('login/', auth_views.LoginView.as_view(
         template_name='auth/login.html',
         redirect_authenticated_user=True
     ), name='login'),
     path('logout/', logout_view, name='logout'),
-    
-    # Rutas de usuarios (más limpias)
-    path('accounts/', include(('apps.users.urls', 'users'), namespace='users')),
     
     # Otras rutas de autenticación
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(
@@ -35,6 +32,6 @@ urlpatterns = [
     ), name='password_reset_complete'),
     
     # Rutas de usuarios
-    path('accounts/users/', include(('apps.users.urls', 'users'), namespace='users')),
+    path('accounts/', include(('apps.users.urls', 'users'), namespace='users')),
     path("__reload__/", include("django_browser_reload.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

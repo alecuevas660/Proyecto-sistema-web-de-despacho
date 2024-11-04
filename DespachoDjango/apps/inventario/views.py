@@ -10,9 +10,7 @@ from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
-from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
-from openpyxl import Workbook
 from datetime import datetime, timedelta
 from django.utils import timezone
 
