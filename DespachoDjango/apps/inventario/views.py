@@ -19,12 +19,31 @@ class InventarioListView(ListView):
     model = Product
     template_name = 'inventario/inventario_list.html'
     context_object_name = 'productos'
+    paginate_by = 10  # Mostrar 10 productos por página
+
+    def get_queryset(self):
+        queryset = Product.objects.select_related('categoria').all()
+
+        # Filtro de categoría
+        categoria = self.request.GET.get('categoria')
+        if categoria:
+            queryset = queryset.filter(categoria=categoria)
+
+        # Búsqueda
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+
+        return queryset.distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
         # Obtener todos los productos con su último stock
-        productos = Product.objects.all()
+        productos = self.get_queryset()  # Obtener los productos filtrados
         productos_atencion = []
         total_stock_bajo = 0
 
@@ -38,6 +57,7 @@ class InventarioListView(ListView):
         context['productos_stock_bajo'] = productos_atencion
         context['total_productos'] = productos.count()
         context['total_stock_bajo'] = total_stock_bajo
+        context['categorias'] = Categoria.objects.filter(activo=True)  # Obtener categorías activas para el filtro
         
         return context
 

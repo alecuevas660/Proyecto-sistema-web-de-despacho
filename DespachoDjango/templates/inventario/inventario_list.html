@@ -3,8 +3,40 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Estado del Inventario</h1>
+        <div>
+            <h1 class="h2">Estado del Inventario</h1>
+            <h6 class="mb-0">Niveles de stock Actuales</h6> <!-- Agregué mb-0 para quitar margen inferior -->
+        </div>
     </div>
+
+    <!-- Filtros y Búsqueda -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <form method="get" class="d-flex gap-2">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i> 
+                </span>
+                <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search }}">
+            </div>
+            
+            <select name="categoria" class="form-select" style="width: auto;">
+                <option value="">Todas las categorías</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.id }}" 
+                        {% if categoria_filter == categoria.id|stringformat:"s" %}selected{% endif %}>
+                    {{ categoria.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if search or categoria_filter %}
+                <a href="{% url 'inventario:product_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
 
     <!-- Resumen de Stock -->
     <div class="row mb-4">
@@ -17,7 +49,7 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card text-white bg-warning">
+            <div class="card text-white bg-danger">
                 <div class="card-body">
                     <h5 class="card-title">Productos con Stock Bajo</h5>
                     <p class="card-text display-4">{{ total_stock_bajo }}</p>
@@ -26,25 +58,22 @@
         </div>
     </div>
 
-    <!-- Lista de Productos con Stock Bajo -->
-    {% if productos_stock_bajo %}
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-white">
-            <h5 class="mb-0">Productos que Requieren Atención</h5>
-        </div>
+    <!-- Lista de Productos -->
+    <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover">
                 <thead>
                     <tr>
                         <th>Producto</th>
                         <th>Stock Actual</th>
                         <th>Stock Mínimo</th>
                         <th>Estado</th>
+                        <th>Categoría</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for producto in productos_stock_bajo %}
+                    {% for producto in productos %}
                     <tr>
                         <td>{{ producto.name }}</td>
                         <td>{{ producto.get_stock_actual }}</td>
@@ -54,22 +83,24 @@
                                 <span class="badge bg-{{ status.1 }}">{{ status.0 }}</span>
                             {% endwith %}
                         </td>
+                        <td>{{ producto.categoria.nombre }}</td>
+                        {% if perms.inventario.change_product or perms.inventario.delete_product %}
                         <td>
                             <a href="{% url 'inventario:stock_update' producto.id %}" 
-                               class="btn btn-sm btn-warning">
+                            class="btn btn-sm btn-warning">
                                 <i class="fas fa-sync-alt"></i> Actualizar Stock
                             </a>
                         </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No se encontraron productos</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-    {% else %}
-    <div class="alert alert-success">
-        No hay productos con stock bajo.
-    </div>
-    {% endif %}
 </div>
 {% endblock %} 
