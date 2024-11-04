@@ -48,8 +48,7 @@ class Product(models.Model):
     categoria = models.ForeignKey(
         Categoria,
         on_delete=models.PROTECT,  # PROTECT evita eliminar categorías con productos
-        related_name='productos',
-        verbose_name='Categoría'
+        related_name='productos'
     )
     description = models.TextField('Descripción', null=True, blank=True)
     price = models.DecimalField(

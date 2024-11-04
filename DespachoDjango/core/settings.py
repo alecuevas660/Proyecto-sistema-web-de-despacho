@@ -34,6 +34,8 @@ LOCAL_APPS = [
     'apps.users.apps.UsersConfig',  # Cambiado de useraccount a users
     'apps.home.apps.HomeConfig',
     'apps.inventario.apps.InventarioConfig',
+    'apps.users.apps.UsersConfig',
+    'apps.inventario.apps.InventarioConfig',
     'apps.ventas.apps.VentasConfig',
 ]
 
@@ -210,7 +212,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'templates'),  # Asegúrate de que esta línea esté aquí
         ],
         'APP_DIRS': True,
         'OPTIONS': {

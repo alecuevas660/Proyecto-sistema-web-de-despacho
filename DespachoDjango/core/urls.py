@@ -6,7 +6,7 @@ from django.contrib.auth import views as auth_views
 from apps.users.views import logout_view
 
 urlpatterns = [
-    path('', include('apps.home.urls', namespace='home')),
+    path('', include(('apps.home.urls', 'home'), namespace='home')),
     path('admin/', admin.site.urls),
     path('inventario/', include('apps.inventario.urls', namespace='inventario')),
     
