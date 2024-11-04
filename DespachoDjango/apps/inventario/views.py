@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError
 
 # Create your views here.
 
-class InventarioListView(LoginRequiredMixin, ListView):
+class InventarioListView(ListView):
     model = Product
     template_name = 'inventario/inventario_list.html'
     context_object_name = 'productos'
@@ -41,7 +41,7 @@ class InventarioListView(LoginRequiredMixin, ListView):
         
         return context
 
-class ProductListView(LoginRequiredMixin, ListView):
+class ProductListView(ListView):
     model = Product
     template_name = 'inventario/product_list.html'
     context_object_name = 'productos'
