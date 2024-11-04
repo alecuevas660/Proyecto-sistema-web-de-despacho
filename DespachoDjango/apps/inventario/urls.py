@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework import viewsets, permissions
-from apps.inventario.models import Product
-from apps.inventario.serializers import ProductSerializer
+from apps.inventario.models import Product, Categoria
+from apps.inventario.serializers import ProductSerializer, CategoriaSerializer
 from rest_framework import routers
 from django.urls import path
 from . import views
@@ -11,8 +11,14 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
 
+class CategoriaViewSet(viewsets.ModelViewSet):
+    queryset = Categoria.objects.all()
+    serializer_class = CategoriaSerializer
+    permission_classes = [permissions.AllowAny]
+
 router = routers.DefaultRouter()
-router.register('producto', ProductViewSet)
+router.register('productos', ProductViewSet)
+router.register('categorias', CategoriaViewSet)
 
 app_name = 'inventario'
 
