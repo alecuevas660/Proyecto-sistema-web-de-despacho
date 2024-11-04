@@ -1,9 +1,8 @@
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
-from django.db.models import Count, Sum, Q
 from apps.inventario.models import Product, Categoria, StockVariable
-from apps.users.models import User, ClienteProfile
+from apps.users.models import User
 from datetime import timedelta
 
 class HomeView(LoginRequiredMixin, TemplateView):
