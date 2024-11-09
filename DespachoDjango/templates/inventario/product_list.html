@@ -19,7 +19,7 @@
         <div class="col-md-12">
             <form method="get" class="d-flex gap-2">
                 <input type="text" name="search" class="form-control" 
-                       placeholder="Buscar productos..." value="{{ search }}">
+                    placeholder="Buscar productos..." value="{{ search }}">
                 
                 <select name="categoria" class="form-select" style="width: auto;">
                     <option value="">Todas las categorías</option>
@@ -80,7 +80,7 @@
                             <div class="btn-group">
                                 {% if perms.inventario.change_product %}
                                 <a href="{% url 'inventario:product_edit' producto.id %}" 
-                                   class="btn btn-sm btn-outline-primary">
+                                class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 {% endif %}
@@ -110,6 +110,10 @@
 
     <!-- Paginación -->
     {% if is_paginated %}
+    <!-- Texto con el rango de resultados -->
+<div class="text-start mt-3">
+    Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} resultados.
+</div>
     <nav class="mt-4">
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}

@@ -10,7 +10,9 @@ from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
+from openpyxl import Workbook
 from datetime import datetime, timedelta
 from django.utils import timezone
 
@@ -20,7 +22,7 @@ class InventarioListView(ListView):
     model = Product
     template_name = 'inventario/inventario_list.html'
     context_object_name = 'productos'
-    paginate_by = 10  # Mostrar 10 productos por página
+    paginate_by = 5
 
     def get_queryset(self):
         queryset = Product.objects.select_related('categoria').all()
@@ -66,7 +68,7 @@ class ProductListView(ListView):
     model = Product
     template_name = 'inventario/product_list.html'
     context_object_name = 'productos'
-    paginate_by = 10
+    paginate_by = 5
 
     def get_queryset(self):
         queryset = Product.objects.all()
