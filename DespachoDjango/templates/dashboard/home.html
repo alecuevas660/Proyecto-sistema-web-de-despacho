@@ -54,7 +54,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-title">Ventas del Día</h6>
-                            <h2 class="display-6 mb-0">${{ ventas_dia|default:"0" }}</h2>
+                            <h2 class="display-6 mb-0">${{ monto_ventas_dia }}</h2>
                         </div>
                         <div class="stat-icon">
                             <i class="fas fa-cash-register fa-2x opacity-50"></i>
@@ -203,18 +203,25 @@
         </div>
     </div>
 </div>
-<input type="text" id="id_ventas_labels" value="100" hidden/>
-<input type="text" id="ventas_data" value="90" hidden/>
+<!---------------    gráfico de torta --------------------------------------------->
 <input type="text" id="productos_nombre_labels" value="{{nombres_productos}}" hidden/>
 <input type="text" id="productosData" value="{{cantidad_productos}}" hidden/>
+<!---------------    gráfico de linea --------------------------------------------->
+<input type="text" id="ventas_labels_mes" value="{{ventas_labels_meses}}" hidden/>
+<input type="text" id="ventas_data_mes" value="{{ventas_data_meses}}" hidden/>
 
 {% load static %}
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // GRAFICO DE LINEA
-    const ventasLabels = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Nomviembre','Diciembre'];
-    const ventasData = [1,2,3];
+    const inputMeses = document.getElementById('ventas_labels_mes').value;
+    const arrayMesesConComillasDobles = inputMeses.replace(/'/g, '"');
+    const ventasLabels = JSON.parse(arrayMesesConComillasDobles);
+
+    const inputVentas = document.getElementById('ventas_data_mes').value;
+    const arrayVentasComillasDobles = inputVentas.replace(/'/g, '"');
+    const ventasData = JSON.parse(arrayVentasComillasDobles);;
 
     //GRAFICO DE TORTA
     //Agregar todos los productos al grafico

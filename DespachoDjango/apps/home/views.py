@@ -6,6 +6,7 @@ from apps.ventas.models import Product, DetalleVenta
 from apps.users.models import User
 from datetime import timedelta
 from django.db.models import Sum
+from apps.ventas.models import Venta
 
 class HomeView(LoginRequiredMixin, TemplateView):
     """Vista principal del dashboard"""
@@ -13,9 +14,25 @@ class HomeView(LoginRequiredMixin, TemplateView):
     login_url = 'login'
 
     def get_context_data(self, **kwargs):
+
         context = super().get_context_data(**kwargs)
         now = timezone.now()
+
+        # Obtener las ventas del mes actual
+        monto_ventas_dia = Venta.objects.filter(fecha_venta__day=now.day).aggregate(Sum('total'))['total__sum'] or 0
+
+        # Obtener las ventas anuales
+        ventas_anio = Venta.objects.filter(fecha_venta__year=now.year).values('fecha_venta__month').annotate(ventas_mes=Sum('total')).order_by('fecha_venta__month')
         
+        # Crear las etiquetas para cada mes (Enero, Febrero, etc.)
+        ventas_labels_meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+        
+        # Recoger los datos de ventas mensuales (puedes agregar más lógica si lo deseas)
+        ventas_data_meses = [0] * 12  # Iniciar lista con 12 valores en 0 (uno por cada mes)
+        
+        for venta in ventas_anio:
+            ventas_data_meses[venta['fecha_venta__month'] - 1] = float(venta['ventas_mes'] or 0)  # Asignamos el total de cada mes
+
         # Obtener datos reales del inventario
         productos = Product.objects.all()
         productos_stock_bajo = [p for p in productos if p.get_stock_actual() < p.stock_minimo]
@@ -35,11 +52,16 @@ class HomeView(LoginRequiredMixin, TemplateView):
         nombres_productos = [detalle['producto__name'] for detalle in detalle_ventas]
         cantidad_productos = [detalle['total_cantidad'] for detalle in detalle_ventas]
 
-        print(nombres_productos)
-        print(cantidad_productos)
+        #print(nombres_productos)
+        #print(cantidad_productos)
+        #print(ventas_labels_meses)
+        #print(ventas_data_meses)
 
         # Datos para el dashboard
         context.update({
+            'monto_ventas_dia': monto_ventas_dia,
+            'ventas_labels_meses': ventas_labels_meses,
+            'ventas_data_meses': ventas_data_meses,
             'nombres_productos' : nombres_productos,
             'cantidad_productos' : cantidad_productos,
             'title': 'Dashboard',
