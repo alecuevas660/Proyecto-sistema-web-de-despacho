@@ -1,9 +1,11 @@
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
-from apps.inventario.models import Product, Categoria, StockVariable
+from apps.inventario.models import Product, Categoria, StockVariable, DetalleCompra
+from apps.ventas.models import Product, DetalleVenta
 from apps.users.models import User
 from datetime import timedelta
+from django.db.models import Sum
 
 class HomeView(LoginRequiredMixin, TemplateView):
     """Vista principal del dashboard"""
@@ -23,8 +25,23 @@ class HomeView(LoginRequiredMixin, TemplateView):
             'producto'
         ).order_by('-id')[:5]  # Usamos id para ordenar por más reciente
         
+        # Obtener el detalle de todas las ventas, agrupado por producto y sumando las cantidades
+        detalle_ventas = DetalleVenta.objects.values('producto__name').annotate(
+            total_cantidad=Sum('cantidad')
+        )
+
+
+        # Preparar los datos para el gráfico de productos vendidos
+        nombres_productos = [detalle['producto__name'] for detalle in detalle_ventas]
+        cantidad_productos = [detalle['total_cantidad'] for detalle in detalle_ventas]
+
+        print(nombres_productos)
+        print(cantidad_productos)
+
         # Datos para el dashboard
         context.update({
+            'nombres_productos' : nombres_productos,
+            'cantidad_productos' : cantidad_productos,
             'title': 'Dashboard',
             'total_productos': productos.count(),
             'categorias_activas': Categoria.objects.filter(activo=True).count(),
@@ -43,7 +60,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
             ],
             
             # Datos para los gráficos
-            'labels_productos': [p.name for p in productos[:5]],
+            'labels_nombre_productos': [p.name for p in productos[:5]],
             'datos_productos': [p.get_stock_actual() for p in productos[:5]],
             
             # Actividad reciente basada en cambios de stock

@@ -203,15 +203,28 @@
         </div>
     </div>
 </div>
+<input type="text" id="id_ventas_labels" value="100" hidden/>
+<input type="text" id="ventas_data" value="90" hidden/>
+<input type="text" id="productos_nombre_labels" value="{{nombres_productos}}" hidden/>
+<input type="text" id="productosData" value="{{cantidad_productos}}" hidden/>
+
 {% load static %}
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Definir las variables que usará el script
-    const ventasLabels = {{ labels_ventas|safe }};
-    const ventasData = {{ datos_ventas|safe }};
-    const productosLabels = {{ labels_productos|safe }};
-    const productosData = {{ datos_productos|safe }};
+    // GRAFICO DE LINEA
+    const ventasLabels = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Nomviembre','Diciembre'];
+    const ventasData = [1,2,3];
+
+    //GRAFICO DE TORTA
+    //Agregar todos los productos al grafico
+    const inputNombreProductos = document.getElementById('productos_nombre_labels').value;
+    const arrayNombreProductosConComillasDobles = inputNombreProductos.replace(/'/g, '"');
+    const productosLabels = JSON.parse(arrayNombreProductosConComillasDobles);
+
+    const inputCantidadProductos = document.getElementById('productosData').value;
+    const arrayCantProductosConComillasDobles = inputCantidadProductos.replace(/'/g, '"');
+    const productosData = JSON.parse(arrayCantProductosConComillasDobles);
 </script>
 <script src="{% static 'js/dashboard/home-charts.js' %}"></script>
 {% endblock %}
