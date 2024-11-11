@@ -50,3 +50,35 @@ main {
 .bg-light-hover:hover {
     background-color: #f8f9fa;
 }
+
+
+/* Lista de despacho */
+.badge-secondary {
+    background-color: #cccccc; /* Color gris para "Bajo" */
+    color: #000;
+}
+.badge-danger {
+    background-color: #ff6b6b; /* Color rojo para "Crítico" */
+    color: #fff;
+}
+.badge-success {
+    background-color: #4caf50; /* Color verde para "Óptimo" */
+    color: #fff;
+}
+
+/* Cambia el color de la barra lateral aquí */
+.sidebar {
+    background-color: #FF6347; /* Cambia este valor por el color que desees */
+    color: rgb(62, 61, 61);
+    width: 80px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+.sidebar .nav-link {
+    color: white;
+}
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Efecto de hover en los íconos */
+}
