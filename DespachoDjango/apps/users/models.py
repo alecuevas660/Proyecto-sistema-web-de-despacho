@@ -24,6 +24,8 @@ class CustomUserManager(BaseUserManager):
             ClienteProfile.objects.create(user=user)
         elif user.role == 'transport':
             TransportistaProfile.objects.create(user=user)
+        elif user.role == 'employee':
+            EmployeeProfile.objects.create(user=user)
 
         return user
 
@@ -53,6 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ADMIN = 'admin', 'Administrador'
         CLIENT = 'client', 'Cliente'
         TRANSPORT = 'transport', 'Transportista'
+        EMPLOYEE = 'employee', 'Empleado'
 
     phone_regex = RegexValidator(
         regex=r'^\+?1?\d{9,15}$',
@@ -129,8 +132,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_transport(self):
         return self.role == self.Roles.TRANSPORT
 
+    @property
+    def is_employee(self):
+        return self.role == self.Roles.EMPLOYEE
+
 class ClienteProfile(models.Model):
-    """Perfil extendido para usuarios con rol de cliente."""
+    """Perfil extendido para usuarios con rol de cliente (supermercados)."""
 
     user = models.OneToOneField(
         User,
@@ -138,8 +145,18 @@ class ClienteProfile(models.Model):
         primary_key=True,
         related_name='cliente_profile'
     )
+    nombre_supermercado = models.CharField('Nombre del Supermercado', max_length=255)
+    rut_empresa = models.CharField('RUT Empresa', max_length=20, unique=True)
+    direccion_facturacion = models.CharField('Dirección de Facturación', max_length=255)
     direccion_envio = models.CharField('Dirección de Envío', max_length=255)
-    preferencias_envio = models.TextField('Preferencias de Envío', blank=True)
+    contacto_nombre = models.CharField('Nombre de Contacto', max_length=150)
+    contacto_telefono = models.CharField('Teléfono de Contacto', max_length=17)
+    limite_credito = models.DecimalField(
+        'Límite de Crédito',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
     historial_compras = models.JSONField(
         'Historial de Compras',
         default=dict,
@@ -163,7 +180,7 @@ class ClienteProfile(models.Model):
         verbose_name_plural = 'Perfiles de Clientes'
 
     def __str__(self):
-        return f"Perfil de Cliente: {self.user.get_full_name()}"
+        return f"{self.nombre_supermercado} ({self.user.email})"
 
 class TransportistaProfile(models.Model):
     """Perfil extendido para usuarios con rol de transportista."""
@@ -221,3 +238,43 @@ class TransportistaProfile(models.Model):
         )
         self.entregas_completadas += 1
         self.save()
+
+class EmployeeProfile(models.Model):
+    """Perfil extendido para usuarios con rol de empleado."""
+    
+    ROLES_CHOICES = [
+        ('gerente_logistica', 'Gerente de Logística'),
+        ('gerente_financiero', 'Gerente Financiero'),
+        ('encargado_inventario', 'Encargado de Inventario'),
+        ('asistente_logistica', 'Asistente de Logística'),
+        ('analista_datos', 'Analista de Datos'),
+    ]
+    
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='employee_profile'
+    )
+    departamento = models.CharField('Departamento', max_length=100)
+    cargo = models.CharField('Cargo', max_length=100, choices=ROLES_CHOICES)
+    fecha_contratacion = models.DateField('Fecha de Contratación', default=timezone.now)
+    supervisor = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='supervisados'
+    )
+
+    class Meta:
+        db_table = 'employee_profiles'
+        verbose_name = 'Perfil de Empleado'
+        verbose_name_plural = 'Perfiles de Empleados'
+
+    def __str__(self):
+        return f"Perfil de Empleado: {self.user.get_full_name()}"
+
+    def get_cargo_display(self):
+        """Retorna el nombre legible del cargo"""
+        return dict(self.ROLES_CHOICES).get(self.cargo, self.cargo)

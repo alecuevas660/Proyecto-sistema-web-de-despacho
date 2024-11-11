@@ -1,0 +1,218 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Panel de Control</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{% url 'inventario:configurar_reporte' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-download"></i> Exportar Reporte
+                </a>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                    <i class="fas fa-calendar"></i> Período
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <li><a class="dropdown-item" href="#">Hoy</a></li>
+                    <li><a class="dropdown-item" href="#">Esta Semana</a></li>
+                    <li><a class="dropdown-item" href="#">Este Mes</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Estadísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Productos</h6>
+                            <h2 class="display-6 mb-0">{{ total_productos }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-boxes fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 small">
+                        <span class="text-white-50">
+                            <i class="fas fa-tag"></i> {{ categorias_activas }} categorías activas
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Ventas del Día</h6>
+                            <h2 class="display-6 mb-0">${{ ventas_dia|default:"0" }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-cash-register fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 small">
+                        <span class="text-white-50">
+                            <i class="fas fa-arrow-up"></i> {{ porcentaje_incremento }}% vs. ayer
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card stat-card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Stock Bajo</h6>
+                            <h2 class="display-6 mb-0">{{ productos_stock_bajo }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 small">
+                        <a href="{% url 'inventario:inventario_list' %}" class="text-white text-decoration-none">
+                            <i class="fas fa-arrow-right"></i> Ver productos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card stat-card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Órdenes Pendientes</h6>
+                            <h2 class="display-6 mb-0">{{ ordenes_pendientes }}</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-shipping-fast fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 small">
+                        <span class="text-white-50">
+                            <i class="fas fa-clock"></i> {{ ordenes_hoy }} nuevas hoy
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Ventas Mensuales</h5>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary">Mensual</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">Anual</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="ventasChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Productos más Vendidos</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="productosChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas y Actividad Reciente -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Alertas del Sistema</h5>
+                    <span class="badge bg-danger">{{ alertas|length }} nuevas</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for alerta in alertas %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ alerta.titulo }}</h6>
+                                <small class="text-muted">{{ alerta.fecha|timesince }}</small>
+                            </div>
+                            <p class="mb-1">{{ alerta.mensaje }}</p>
+                            <small class="text-{{ alerta.tipo }}">
+                                <i class="fas fa-circle"></i> {{ alerta.get_tipo_display }}
+                            </small>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            <i class="fas fa-check-circle"></i> No hay alertas pendientes
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Actividad Reciente</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for actividad in actividades_recientes %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ actividad.descripcion }}</h6>
+                                <small class="text-muted">{{ actividad.fecha|timesince }}</small>
+                            </div>
+                            <p class="mb-1">{{ actividad.detalles }}</p>
+                            <small class="text-muted">
+                                <i class="fas fa-user"></i> {{ actividad.usuario }}
+                            </small>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item text-center text-muted">
+                            No hay actividad reciente
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% load static %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Definir las variables que usará el script
+    const ventasLabels = {{ labels_ventas|safe }};
+    const ventasData = {{ datos_ventas|safe }};
+    const productosLabels = {{ labels_productos|safe }};
+    const productosData = {{ datos_productos|safe }};
+</script>
+<script src="{% static 'js/dashboard/home-charts.js' %}"></script>
+{% endblock %}
+{% endblock %}

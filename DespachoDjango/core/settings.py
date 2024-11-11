@@ -18,6 +18,8 @@ ALLOWED_HOSTS = []
 
 # Application definition
 DJANGO_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -32,23 +34,27 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     'apps.users.apps.UsersConfig',  # Cambiado de useraccount a users
+    'apps.home.apps.HomeConfig',
+    'apps.inventario.apps.InventarioConfig',
+    'apps.users.apps.UsersConfig',
     'apps.inventario.apps.InventarioConfig',
     'apps.ventas.apps.VentasConfig',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + ["django_browser_reload"]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'App.urls'
+ROOT_URLCONF = 'core.urls'
 
 TEMPLATES = [
     {
@@ -69,6 +75,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'App.wsgi.application'
+
+# Configuración de Channels
+ASGI_APPLICATION = 'core.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 DATABASES = {
@@ -121,7 +138,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # User configuration
 AUTH_USER_MODEL = 'users.User'
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'home:home'
 LOGOUT_REDIRECT_URL = 'login'
 
 # Email configuration
@@ -181,20 +198,76 @@ CACHES = {
 # Directory structure verification
 REQUIRED_DIRS = [
     os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'static', 'css'),
+    os.path.join(BASE_DIR, 'static', 'js'),
     os.path.join(BASE_DIR, 'media'),
     os.path.join(BASE_DIR, 'templates'),
-    os.path.join(BASE_DIR, 'apps'),
+    os.path.join(BASE_DIR, 'templates', 'inventario'),
 ]
 
 for directory in REQUIRED_DIRS:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+# Configuración de archivos estáticos
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Configuración de archivos media
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',  # Para respuestas JSON
-        'rest_framework.renderers.BrowsableAPIRenderer',  # Opcional, si necesitas la vista navegable de DRF
-    ],
+# Configuración de mensajes
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
+# Configuración de autenticación
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home:home'
+LOGOUT_REDIRECT_URL = 'login'
+
+# Configuración de templates
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),  # Asegúrate de que esta línea esté aquí
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+# Configuración de mensajes de Django
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.DEBUG: 'alert-secondary',
+    messages.INFO: 'alert-info',
+    messages.SUCCESS: 'alert-success',
+    messages.WARNING: 'alert-warning',
+    messages.ERROR: 'alert-danger',
 }
+
+# Asegúrate de que la estructura de directorios exista
+REQUIRED_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'static', 'css'),
+    os.path.join(BASE_DIR, 'static', 'js'),
+    os.path.join(BASE_DIR, 'media'),
+    os.path.join(BASE_DIR, 'templates'),
+    os.path.join(BASE_DIR, 'templates', 'inventario'),
+]
+
+for directory in REQUIRED_DIRS:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+

@@ -89,7 +89,7 @@ source venv/bin/activate  # En Windows: venv\Scripts\activate
 
 3. Instalar dependencias:
 ```bash
-pip install -r requirements/base.txt
+pip install -r requirements.txt
 ```
 
 4. Configurar .env:
@@ -102,6 +102,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 
 5. Migraciones:
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 python manage.py createsuperuser
 ```

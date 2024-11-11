@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <h4>Caimán</h4>
+            </div>
+            
+            <div class="user-info">
+                <p class="mb-0">Bienvenido</p>
+                <p class="mb-0 fw-bold">{{ user.get_full_name }}</p>
+            </div>
+
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <!-- Dashboard -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.namespace == 'home' %}active{% endif %}" 
+                           href="{% url 'home:home' %}">
+                            <i class="fas fa-home"></i> Resumen
+                        </a>
+                    </li>
+
+                    <!-- Inventario -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.namespace == 'inventario' %}active{% endif %}"
+                           href="#inventarioSubmenu"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="false"
+                           aria-controls="inventarioSubmenu">
+                            <i class="fas fa-box"></i> Inventario
+                        </a>
+                        <div class="collapse {% if request.resolver_match.namespace == 'inventario' %}show{% endif %}" 
+                             id="inventarioSubmenu">
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'inventario_list' %}active{% endif %}" 
+                                       href="{% url 'inventario:inventario_list' %}">
+                                        <i class="fas fa-chart-bar"></i> Estado Inventario
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'product_list' %}active{% endif %}" 
+                                       href="{% url 'inventario:product_list' %}">
+                                        <i class="fas fa-boxes"></i> Productos
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}" 
+                                       href="{% url 'inventario:category_list' %}">
+                                        <i class="fas fa-tags"></i> Categorías
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- Órdenes -->
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           href="#ordenesSubmenu"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="false"
+                           aria-controls="ordenesSubmenu">
+                            <i class="fas fa-shopping-cart"></i> Órdenes
+                        </a>
+                        <div class="collapse" id="ordenesSubmenu">
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <i class="fas fa-list"></i> Lista de Órdenes
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <i class="fas fa-plus"></i> Nueva Orden
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- Seguimiento -->
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           href="#seguimientoSubmenu"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="false"
+                           aria-controls="seguimientoSubmenu">
+                            <i class="fas fa-truck"></i> Seguimiento
+                        </a>
+                        <div class="collapse" id="seguimientoSubmenu">
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <i class="fas fa-map-marker-alt"></i> Envíos Activos
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <i class="fas fa-history"></i> Historial
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- Reportes -->
+                    <li class="nav-item">
+                        <a class="nav-link"
+                           href="#reportesSubmenu"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="false"
+                           aria-controls="reportesSubmenu">
+                            <i class="fas fa-chart-line"></i> Reportes
+                        </a>
+                        <div class="collapse" id="reportesSubmenu">
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <i class="fas fa-file-invoice-dollar"></i> Ventas
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <i class="fas fa-truck-loading"></i> Envíos
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#">
+                                        <i class="fas fa-chart-pie"></i> Estadísticas
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+
+                    <!-- Usuarios -->
+                    {% if user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.namespace == 'users' %}active{% endif %}"
+                           href="#usuariosSubmenu"
+                           data-bs-toggle="collapse"
+                           role="button"
+                           aria-expanded="false"
+                           aria-controls="usuariosSubmenu">
+                            <i class="fas fa-users"></i> Usuarios
+                        </a>
+                        <div class="collapse {% if request.resolver_match.namespace == 'users' %}show{% endif %}" id="usuariosSubmenu">
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'client_list' %}active{% endif %}" 
+                                       href="{% url 'users:client_list' %}">
+                                        <i class="fas fa-user-friends"></i> Clientes
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'employee_list' %}active{% endif %}" 
+                                       href="{% url 'users:employee_list' %}">
+                                        <i class="fas fa-user-tie"></i> Empleados
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            {% if user.is_staff %}
+            <div class="admin-section">
+                <a href="{% url 'admin:index' %}" class="btn btn-outline-primary w-100 mb-3">
+                    <i class="fas fa-cog"></i> Panel de Administración
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="sidebar-footer">
+                <form method="post" action="{% url 'logout' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger w-100">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content flex-grow-1">
+        {% if messages %}
+            <div class="container-fluid mt-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="container-fluid py-4">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

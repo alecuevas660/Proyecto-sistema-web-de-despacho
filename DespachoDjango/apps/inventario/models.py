@@ -1,7 +1,8 @@
 import uuid
 from django.db import models
 from django.conf import settings
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MinLengthValidator
+from django.core.exceptions import ValidationError
 from decimal import Decimal
 
 class EstadoEnvio:
@@ -18,10 +19,37 @@ class EstadoEnvio:
         (CANCELADO, 'Cancelado'),
     ]
 
+class Categoria(models.Model):
+    """Modelo que representa una categoría de producto."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nombre = models.CharField('Nombre', max_length=100, unique=True)
+    descripcion = models.TextField('Descripción', blank=True)
+    activo = models.BooleanField('Activo', default=True)
+    created_at = models.DateTimeField('Fecha de Creación', auto_now_add=True)
+    updated_at = models.DateTimeField('Fecha de Actualización', auto_now=True)
+
+    class Meta:
+        db_table = 'categorias'
+        verbose_name = 'Categoría'
+        verbose_name_plural = 'Categorías'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
 class Product(models.Model):
     """Modelo que representa un producto en el sistema."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField('Nombre', max_length=255)
+    name = models.CharField(
+        'Nombre',
+        max_length=255,
+        validators=[MinLengthValidator(3, 'El nombre debe tener al menos 3 caracteres')]
+    )
+    categoria = models.ForeignKey(
+        Categoria,
+        on_delete=models.PROTECT,  # PROTECT evita eliminar categorías con productos
+        related_name='productos'
+    )
     description = models.TextField('Descripción', null=True, blank=True)
     price = models.DecimalField(
         'Precio',
@@ -39,6 +67,7 @@ class Product(models.Model):
         verbose_name = 'Producto'
         verbose_name_plural = 'Productos'
         ordering = ['-created_at']
+        unique_together = ['name', 'categoria']
 
     def __str__(self):
         return self.name
@@ -47,9 +76,45 @@ class Product(models.Model):
         """Retorna el stock actual del producto"""
         return self.stock_variables.latest('fecha_actualizacion').cantidad_stock if self.stock_variables.exists() else 0
 
+    def get_stock_status(self):
+        """Retorna el estado del stock basado en el stock actual y mínimo"""
+        stock_actual = self.get_stock_actual()
+        if stock_actual >= self.stock_minimo * 3/3:  # 100% o más del mínimo
+            return ('Óptimo', 'success')
+        elif stock_actual >= self.stock_minimo * 2/3:  # 66% o más del mínimo
+            return ('Bajo', 'warning')
+        else:  # Menos del 66% del mínimo
+            return ('Crítico', 'danger')
+
+    def clean(self):
+        """Validaciones personalizadas del modelo"""
+        if self.price and self.price <= 0:
+            raise ValidationError({'price': 'El precio debe ser mayor que 0'})
+        
+        if self.stock_minimo and self.stock_minimo < 0:
+            raise ValidationError({'stock_minimo': 'El stock mínimo no puede ser negativo'})
+        
+        if self.name and self.categoria:
+            exists = Product.objects.filter(
+                name__iexact=self.name,
+                categoria=self.categoria
+            ).exclude(pk=self.pk).exists()
+            
+            if exists:
+                raise ValidationError({
+                    'name': 'Ya existe un producto con este nombre en la misma categoría'
+                })
+
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = self.name.strip()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 class StockVariable(models.Model):
     """Modelo que representa el historial de stock de un producto."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     producto = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
@@ -59,6 +124,7 @@ class StockVariable(models.Model):
     cantidad_stock = models.PositiveIntegerField('Cantidad en Stock')
     fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
     motivo = models.CharField('Motivo de Actualización', max_length=255, blank=True)
+
 
     class Meta:
         db_table = 'stock_variable'
@@ -72,6 +138,7 @@ class StockVariable(models.Model):
 class DetalleCompra(models.Model):
     """Modelo que representa los detalles de una compra."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     producto = models.ForeignKey(
         Product,
         on_delete=models.PROTECT,
