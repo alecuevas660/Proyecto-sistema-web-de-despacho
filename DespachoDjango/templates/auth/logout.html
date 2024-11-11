@@ -1,0 +1,22 @@
+{% extends 'auth/base_auth.html' %}
+
+{% block title %}Cerrar Sesión{% endblock %}
+
+{% block auth_content %}
+<div class="text-center mb-4">
+    <h1 class="h3">Cerrar Sesión</h1>
+    <p class="text-muted">¿Estás seguro que deseas cerrar sesión?</p>
+</div>
+
+<form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-sign-out-alt me-2"></i>Sí, cerrar sesión
+        </button>
+        <a href="{% url 'home:home' %}" class="btn btn-secondary">
+            <i class="fas fa-times me-2"></i>Cancelar
+        </a>
+    </div>
+</form>
+{% endblock %} 

@@ -107,3 +107,40 @@ class StockUpdateForm(forms.ModelForm):
                 'placeholder': 'Motivo de la actualización'
             })
         }
+
+class ReporteInventarioForm(forms.Form):
+    ORDEN_CHOICES = [
+        ('nombre', 'Nombre'),
+        ('categoria', 'Categoría'),
+        ('stock', 'Stock'),
+        ('precio', 'Precio'),
+    ]
+    
+    fecha_inicio = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    fecha_fin = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    categorias = forms.ModelMultipleChoiceField(
+        queryset=Categoria.objects.filter(activo=True),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-control'})
+    )
+    umbral_stock_bajo = forms.IntegerField(
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+    ordenar_por = forms.ChoiceField(
+        choices=ORDEN_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    incluir_inactivos = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )

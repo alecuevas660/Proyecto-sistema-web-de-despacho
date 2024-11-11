@@ -1,0 +1,68 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Configurar Reporte{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Configurar Reporte de Inventario</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'inventario:exportar_inventario' %}" class="row g-3">
+                        {% csrf_token %}
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Inicio</label>
+                            {{ form.fecha_inicio }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Fecha Fin</label>
+                            {{ form.fecha_fin }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Categorías</label>
+                            {{ form.categorias }}
+                            <div class="form-text">Mantén presionado Ctrl para seleccionar múltiples categorías</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Umbral de Stock Bajo</label>
+                            {{ form.umbral_stock_bajo }}
+                            <div class="form-text">Personaliza el nivel para considerar stock bajo</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Ordenar Por</label>
+                            {{ form.ordenar_por }}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                {{ form.incluir_inactivos }}
+                                <label class="form-check-label">
+                                    Incluir productos inactivos
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-download"></i> Generar Reporte
+                            </button>
+                            <a href="{% url 'home:home' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
