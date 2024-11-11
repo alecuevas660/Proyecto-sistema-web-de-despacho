@@ -19,11 +19,8 @@ class EmailAPIView(APIView):
         
 
 class enviar_correo():
-        
-        recibidor = str
-
         sender = 'test.dummy4520@gmail.com'
-        receiver =  recibidor
+        receiver = 'fa.salgado@duocuc.cl'
         password = 'uyvr oron kbwu mtqz'
 
         msg = MIMEText('Este es un mensaje de prueba desde un script simple.')
