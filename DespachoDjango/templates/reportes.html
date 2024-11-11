@@ -1,0 +1,71 @@
+<!-- reportes.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes</title>
+</head>
+<body>
+    <h1>Reportes</h1>
+
+    <!-- Barra de búsqueda -->
+    <form method="GET" action="{% url 'reportes' %}">
+        <label for="q">Buscar por nombre:</label>
+        <input type="text" name="q" id="q" value="{{ query }}" placeholder="Buscar...">
+        
+        <!-- Filtro de fecha -->
+        <label for="filtro">Filtrar por fecha:</label>
+        <select name="filtro" id="filtro">
+            <option value="hoy" {% if filtro == 'hoy' %}selected{% endif %}>Hoy</option>
+            <option value="mes" {% if filtro == 'mes' %}selected{% endif %}>Último mes</option>
+            <option value="año" {% if filtro == 'año' %}selected{% endif %}>Último año</option>
+        </select>
+        
+        <button type="submit">Buscar</button>
+    </form>
+
+    <!-- Mostrar la tabla de reportes -->
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Fecha</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reporte in page_obj %}
+                <tr>
+                    <td>{{ reporte.nombre }}</td>
+                    <td>{{ reporte.fecha }}</td>
+                    <td>{{ reporte.descripcion }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="3">No se encontraron reportes para este filtro y búsqueda.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Controles de Paginación -->
+    <div>
+        <span>
+            {% if page_obj.has_previous %}
+                <a href="?filtro={{ filtro }}&q={{ query }}&page=1">Primera</a>
+                <a href="?filtro={{ filtro }}&q={{ query }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+            {% endif %}
+        </span>
+        
+        <span> Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} </span>
+        
+        <span>
+            {% if page_obj.has_next %}
+                <a href="?filtro={{ filtro }}&q={{ query }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                <a href="?filtro={{ filtro }}&q={{ query }}&page={{ page_obj.paginator.num_pages }}">Última</a>
+            {% endif %}
+        </span>
+    </div>
+</body>
+</html>
+
+  <!--a-->

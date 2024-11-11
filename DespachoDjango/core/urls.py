@@ -3,7 +3,17 @@ from django.urls import path, include, reverse_lazy
 from django.conf import settings
 from django.conf.urls.static import static
 
+from apps.home.views import HomeView
+from . import views
+
+
     path('admin/', admin.site.urls),
+
+    path('reportes/', views.reporte_view, name='reportes'),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+#a
+
     path('inventario/', include('apps.inventario.urls', namespace='inventario')),
     
     # Rutas de autenticación
@@ -36,3 +46,4 @@ from django.conf.urls.static import static
 
 
     
+
