@@ -45,3 +45,5 @@ def reporte_view(request):
         'filtro': filtro,
         'query': query  # Pasamos el término de búsqueda al template
     })
+
+#a
