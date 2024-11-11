@@ -1,0 +1,178 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Productos</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            {% if perms.inventario.add_product %}
+            <a href="{% url 'inventario:product_create' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus"></i> Nuevo Producto
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <form method="get" class="d-flex gap-2">
+                <input type="text" name="search" class="form-control" 
+                    placeholder="Buscar productos..." value="{{ search }}">
+                
+                <select name="categoria" class="form-select" style="width: auto;">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" 
+                            {% if categoria_filter == categoria.id|stringformat:"s" %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <select name="stock" class="form-select" style="width: auto;">
+                    <option value="">Todos los stocks</option>
+                    <option value="bajo" {% if stock_filter == 'bajo' %}selected{% endif %}>Stock Bajo</option>
+                    <option value="normal" {% if stock_filter == 'normal' %}selected{% endif %}>Stock Normal</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                {% if search or stock_filter or categoria_filter %}
+                    <a href="{% url 'inventario:product_list' %}" class="btn btn-secondary">Limpiar</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Productos -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Estado</th>
+                        {% if perms.inventario.change_product or perms.inventario.delete_product %}
+                        <th>Acciones</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    <tr>
+                        <td>{{ producto.name }}</td>
+                        <td>{{ producto.categoria.nombre }}</td>
+                        <td>${{ producto.price }}</td>
+                        <td>{{ producto.get_stock_actual }}</td>
+                        <td>{{ producto.stock_minimo }}</td>
+                        <td>
+                            {% with status=producto.get_stock_status %}
+                                <span class="badge bg-{{ status.1 }}">{{ status.0 }}</span>
+                            {% endwith %}
+                        </td>
+                        {% if perms.inventario.change_product or perms.inventario.delete_product %}
+                        <td>
+                            <div class="btn-group">
+                                {% if perms.inventario.change_product %}
+                                <a href="{% url 'inventario:product_edit' producto.id %}" 
+                                class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if perms.inventario.delete_product %}
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal"
+                                        data-product-id="{{ producto.id }}"
+                                        data-product-name="{{ producto.name }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No se encontraron productos</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <!-- Texto con el rango de resultados -->
+<div class="text-start mt-3">
+    Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} resultados.
+</div>
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Modal de Eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que deseas eliminar el producto "<span id="productName"></span>"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/inventario/product-list.js' %}"></script>
+{% endblock %} 

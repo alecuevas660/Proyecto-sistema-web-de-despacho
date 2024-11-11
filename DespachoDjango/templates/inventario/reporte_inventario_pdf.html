@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Inventario</title>
+    <style>
+        .status-success {
+            color: green;
+        }
+
+        .status-warning {
+            color: orange;
+        }
+
+        .status-danger {
+            color: red;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>Reporte de Inventario</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Stock Mínimo</th>
+                <th>Stock Actual</th>
+                <th>Estado</th>
+                <th>Valor Total en Inventario</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in productos_inventario %}
+            <tr>
+                <td>{{ item.producto.name }}</td>
+                <td>{{ item.producto.categoria.nombre }}</td>
+                <td>{{ item.producto.description }}</td>
+                <td>{{ item.producto.price }}</td>
+                <td>{{ item.producto.stock_minimo }}</td>
+                <td>{{ item.stock_actual }}</td>
+                <td class="status-{{ item.stock_status.1 }}">{{ item.stock_status.0 }}</td>
+                <td>{{ item.valor_inventario }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="total">Valor Total del Inventario: {{ total_valor_inventario }}</p>
+</body>
+</html>

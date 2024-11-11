@@ -1,0 +1,150 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+            <h1 class="h2">Estado del Inventario</h1>
+            <h6 class="mb-0">Niveles de stock Actuales</h6> <!-- Agregué mb-0 para quitar margen inferior -->
+        </div>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <form method="get" class="d-flex gap-2">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i> 
+                </span>
+                <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search }}">
+            </div>
+            
+            <select name="categoria" class="form-select" style="width: auto;">
+                <option value="">Todas las categorías</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.id }}" 
+                        {% if categoria_filter == categoria.id|stringformat:"s" %}selected{% endif %}>
+                    {{ categoria.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if search or categoria_filter %}
+                <a href="{% url 'inventario:product_list' %}" class="btn btn-secondary">Limpiar</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+    <!-- Resumen de Stock -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Productos</h5>
+                    <p class="card-text display-4">{{ total_productos }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">Productos con Stock Bajo</h5>
+                    <p class="card-text display-4">{{ total_stock_bajo }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Productos -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Mínimo</th>
+                        <th>Estado</th>
+                        <th>Categoría</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                    <tr>
+                        <td>{{ producto.name }}</td>
+                        <td>{{ producto.get_stock_actual }}</td>
+                        <td>{{ producto.stock_minimo }}</td>
+                        <td>
+                            {% with status=producto.get_stock_status %}
+                                <span class="badge bg-{{ status.1 }}">{{ status.0 }}</span>
+                            {% endwith %}
+                        </td>
+                        <td>{{ producto.categoria.nombre }}</td>
+                        {% if perms.inventario.change_product or perms.inventario.delete_product %}
+                        <td>
+                            <a href="{% url 'inventario:stock_update' producto.id %}" 
+                            class="btn btn-sm btn-warning">
+                                <i class="fas fa-sync-alt"></i> Actualizar Stock
+                            </a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No se encontraron productos</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% if is_paginated %}
+
+<!-- Texto con el rango de resultados -->
+<div class="text-start mt-3">
+    Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} resultados.
+</div>
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">&laquo; Primera</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+        {% endif %} 
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+
+{% endif %}
+
+{% endblock %} 
+
+

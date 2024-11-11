@@ -1,0 +1,61 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ object.id|yesno:"Editar,Crear" }} Producto</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" class="needs-validation" novalidate id="productForm">
+                        {% csrf_token %}
+                        
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ field }}
+                            <div class="invalid-feedback"></div>
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'inventario:product_list' %}" 
+                               class="btn btn-secondary me-md-2">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {{ object.id|yesno:"Actualizar,Crear" }} Producto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/inventario/product-form.js' %}"></script>
+{% endblock %} 
