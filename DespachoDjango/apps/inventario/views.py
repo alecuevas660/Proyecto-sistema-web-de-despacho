@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import redirect, render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -469,3 +470,77 @@ def generar_pdf(request, productos_inventario, total_valor_inventario, categoria
     response['Content-Disposition'] = 'attachment; filename="reporte_inventario.pdf"'
     
     return response
+
+def generar_reporte_general(): #Plantilla para realizar reporte general
+    productos = Product.objects.filter(activo=True)
+    reporte_data = []
+    total_valor_inventario = Decimal('0.00')
+
+    for producto in productos:
+        stock_actual = producto.get_stock_actual()
+        stock_status, stock_status_class = producto.get_stock_status()
+        valor_total_producto = producto.price * stock_actual
+
+        reporte_data.append({
+            'nombre': producto.name,
+            'categoria': producto.categoria.name,
+            'precio': producto.price,
+            'stock_minimo': producto.stock_minimo,
+            'stock_actual': stock_actual,
+            'estado_stock': stock_status,
+            'valor_total': valor_total_producto,
+        })
+
+        total_valor_inventario += valor_total_producto
+
+    return reporte_data, total_valor_inventario
+
+def generar_reporte_por_categoria(categoria_id): #Plantilla para realizar reporte por categoria
+    categoria = Categoria.objects.get(id=categoria_id)
+    productos = categoria.productos.filter(activo=True)
+    reporte_data = []
+    total_valor_inventario = Decimal('0.00')
+
+    for producto in productos:
+        stock_actual = producto.get_stock_actual()
+        stock_status, stock_status_class = producto.get_stock_status()
+        valor_total_producto = producto.price * stock_actual
+
+        reporte_data.append({
+            'nombre': producto.name,
+            'descripcion': producto.description,
+            'precio': producto.price,
+            'stock_minimo': producto.stock_minimo,
+            'stock_actual': stock_actual,
+            'estado_stock': stock_status,
+            'valor_total': valor_total_producto,
+        })
+
+        total_valor_inventario += valor_total_producto
+
+    return reporte_data, total_valor_inventario
+
+def generar_reporte_bajos_en_stock(): #Plantilla para realizar reporte bajos en stock
+    productos = Product.objects.filter(activo=True)
+    reporte_data = []
+    total_valor_inventario = Decimal('0.00')
+
+    for producto in productos:
+        stock_actual = producto.get_stock_actual()
+        if stock_actual < producto.stock_minimo * 0.30:  # Si el stock es menor al 30% del stock mínimo
+            stock_status, stock_status_class = producto.get_stock_status()
+            valor_total_producto = producto.price * stock_actual
+
+            reporte_data.append({
+                'nombre': producto.name,
+                'categoria': producto.categoria.name,
+                'precio': producto.price,
+                'stock_minimo': producto.stock_minimo,
+                'stock_actual': stock_actual,
+                'estado_stock': stock_status,
+                'valor_total': valor_total_producto,
+            })
+
+            total_valor_inventario += valor_total_producto
+
+    return reporte_data, total_valor_inventario
