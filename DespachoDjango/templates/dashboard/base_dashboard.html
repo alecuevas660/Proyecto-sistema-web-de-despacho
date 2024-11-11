@@ -55,6 +55,12 @@
                                         <i class="fas fa-tags"></i> Categorías
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'reporte_inventario' %}active{% endif %}" 
+                                    href="{% url 'inventario:reporte_inventario' %}">
+                                        <i class="fas fa-box"></i> Reporte inventario
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </li>

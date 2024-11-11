@@ -34,4 +34,5 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('exportar/', views.exportar_inventario, name='exportar_inventario'),
     path('configurar-reporte/', views.configurar_reporte, name='configurar_reporte'),
+    path('reporte_inventario/', views.reporte_inventario, name='reporte_inventario'),
 ]

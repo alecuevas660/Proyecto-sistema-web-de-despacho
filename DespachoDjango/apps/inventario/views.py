@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import redirect, render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -15,6 +16,9 @@ from django.core.exceptions import ValidationError
 from openpyxl import Workbook
 from datetime import datetime, timedelta
 from django.utils import timezone
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.template.loader import render_to_string
 
 # Create your views here.
 
@@ -376,3 +380,167 @@ def exportar_inventario(request):
 
     wb.save(response)
     return response
+
+def reporte_inventario(request):
+    # Obtener filtros del request
+    nombre = request.GET.get('nombre', '')
+    categoria_id = request.GET.get('categoria')
+    stock_status = request.GET.get('stock_status')
+    fecha_filtro = request.GET.get('fecha_filtro')
+
+    # Filtrar productos activos
+    productos = Product.objects.filter(activo=True)
+
+    # Filtro de nombre
+    if nombre:
+        productos = productos.filter(name__icontains=nombre)
+
+    # Filtro de categoría
+    if categoria_id:
+        productos = productos.filter(categoria__id=categoria_id)
+
+    # Filtro de estado de stock
+    if stock_status:
+        productos = [p for p in productos if p.get_stock_status()[1] == stock_status]
+
+    # Filtro de fecha
+    if fecha_filtro == 'hoy':
+        productos = productos.filter(created_at__date=timezone.now().date())
+    elif fecha_filtro == 'ultimo_mes':
+        productos = productos.filter(created_at__gte=timezone.now() - timedelta(days=30))
+    elif fecha_filtro == 'ultimo_ano':
+        productos = productos.filter(created_at__gte=timezone.now() - timedelta(days=365))
+
+    # Crear lista de productos con stock y valores calculados
+    productos_inventario = []
+    total_valor_inventario = 0
+
+    for producto in productos:
+        stock_actual = producto.get_stock_actual()
+        valor_inventario = producto.price * stock_actual
+        total_valor_inventario += valor_inventario
+
+        productos_inventario.append({
+            'producto': producto,
+            'stock_actual': stock_actual,
+            'valor_inventario': valor_inventario,
+            'stock_status': producto.get_stock_status()
+        })
+
+    # Pasar datos y categorías para los filtros al template
+    categorias = Categoria.objects.all()
+
+    # Verificar si se solicita descargar el PDF
+    if 'descargar_pdf' in request.GET:
+        return generar_pdf(request, productos_inventario, total_valor_inventario, categorias)
+
+    # Renderizar el reporte en la vista HTML normal
+    return render(request, 'inventario/reporte_inventario.html', {
+        'productos_inventario': productos_inventario,
+        'total_valor_inventario': total_valor_inventario,
+        'categorias': categorias,
+    })
+
+
+def generar_pdf(request, productos_inventario, total_valor_inventario, categorias):
+    """Genera el PDF del reporte inventario a partir del template HTML"""
+
+    # Renderizar el template a HTML utilizando render_to_string
+    html = render_to_string('inventario/reporte_inventario_pdf.html', {
+        'productos_inventario': productos_inventario,
+        'total_valor_inventario': total_valor_inventario,
+        'categorias': categorias,
+    })
+
+    # Crear un buffer para almacenar el PDF generado
+    buffer = BytesIO()
+
+    # Usar xhtml2pdf para crear el PDF
+    pisa_status = pisa.CreatePDF(html, dest=buffer)
+
+    # Si hubo un error en la creación del PDF, mostrar un mensaje
+    if pisa_status.err:
+        return HttpResponse('Error generando el PDF', status=500)
+
+    # Configurar la respuesta para que sea un archivo PDF
+    buffer.seek(0)
+
+    # Forzar la descarga del PDF
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_inventario.pdf"'
+    
+    return response
+
+def generar_reporte_general(): #Plantilla para realizar reporte general
+    productos = Product.objects.filter(activo=True)
+    reporte_data = []
+    total_valor_inventario = Decimal('0.00')
+
+    for producto in productos:
+        stock_actual = producto.get_stock_actual()
+        stock_status, stock_status_class = producto.get_stock_status()
+        valor_total_producto = producto.price * stock_actual
+
+        reporte_data.append({
+            'nombre': producto.name,
+            'categoria': producto.categoria.name,
+            'precio': producto.price,
+            'stock_minimo': producto.stock_minimo,
+            'stock_actual': stock_actual,
+            'estado_stock': stock_status,
+            'valor_total': valor_total_producto,
+        })
+
+        total_valor_inventario += valor_total_producto
+
+    return reporte_data, total_valor_inventario
+
+def generar_reporte_por_categoria(categoria_id): #Plantilla para realizar reporte por categoria
+    categoria = Categoria.objects.get(id=categoria_id)
+    productos = categoria.productos.filter(activo=True)
+    reporte_data = []
+    total_valor_inventario = Decimal('0.00')
+
+    for producto in productos:
+        stock_actual = producto.get_stock_actual()
+        stock_status, stock_status_class = producto.get_stock_status()
+        valor_total_producto = producto.price * stock_actual
+
+        reporte_data.append({
+            'nombre': producto.name,
+            'descripcion': producto.description,
+            'precio': producto.price,
+            'stock_minimo': producto.stock_minimo,
+            'stock_actual': stock_actual,
+            'estado_stock': stock_status,
+            'valor_total': valor_total_producto,
+        })
+
+        total_valor_inventario += valor_total_producto
+
+    return reporte_data, total_valor_inventario
+
+def generar_reporte_bajos_en_stock(): #Plantilla para realizar reporte bajos en stock
+    productos = Product.objects.filter(activo=True)
+    reporte_data = []
+    total_valor_inventario = Decimal('0.00')
+
+    for producto in productos:
+        stock_actual = producto.get_stock_actual()
+        if stock_actual < producto.stock_minimo * 0.30:  # Si el stock es menor al 30% del stock mínimo
+            stock_status, stock_status_class = producto.get_stock_status()
+            valor_total_producto = producto.price * stock_actual
+
+            reporte_data.append({
+                'nombre': producto.name,
+                'categoria': producto.categoria.name,
+                'precio': producto.price,
+                'stock_minimo': producto.stock_minimo,
+                'stock_actual': stock_actual,
+                'estado_stock': stock_status,
+                'valor_total': valor_total_producto,
+            })
+
+            total_valor_inventario += valor_total_producto
+
+    return reporte_data, total_valor_inventario
