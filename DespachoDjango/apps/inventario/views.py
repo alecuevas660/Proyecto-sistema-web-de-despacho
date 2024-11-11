@@ -443,7 +443,7 @@ def reporte_inventario(request):
 
 
 def generar_pdf(request, productos_inventario, total_valor_inventario, categorias):
-    """Genera el PDF a partir del template HTML"""
+    """Genera el PDF del reporte inventario a partir del template HTML"""
 
     # Renderizar el template a HTML utilizando render_to_string
     html = render_to_string('inventario/reporte_inventario_pdf.html', {
