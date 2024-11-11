@@ -7,7 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q
 from django.contrib.auth import logout
 from .models import User, ClienteProfile, EmployeeProfile
-from .forms import ClienteForm, EmployeeForm
+from .forms import ClienteForm, EmployeeForm, ClienteUpdateForm, EmployeeUpdateForm
 
 def is_admin_or_employee(user):
     """Verifica si el usuario es admin o empleado con permisos de staff"""
@@ -111,7 +111,7 @@ class UserUpdateView(BaseUserView, UpdateView):
     
     def get_form_class(self):
         user = self.get_object()
-        return ClienteForm if user.is_client else EmployeeForm
+        return ClienteUpdateForm if user.is_client else EmployeeUpdateForm
     
     def form_valid(self, form):
         try:
@@ -162,3 +162,35 @@ def logout_view(request):
     else:
         messages.error(request, 'Método no permitido')
         return redirect('home:home')
+
+def user_form_view(request, pk=None):
+    user = get_object_or_404(User, pk=pk) if pk else None
+    
+    if user:
+        # Actualización
+        if user.is_client:
+            form_class = ClienteUpdateForm
+        else:
+            form_class = EmployeeUpdateForm
+    else:
+        # Creación
+        if request.GET.get('type') == 'client':
+            form_class = ClienteForm
+        else:
+            form_class = EmployeeForm
+
+    if request.method == 'POST':
+        form = form_class(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('user_detail', pk=form.instance.pk)
+    else:
+        form = form_class(instance=user)
+
+    context = {
+        'form': form,
+        'is_update': bool(user),
+        'title': 'Actualizar Usuario' if user else 'Crear Usuario',
+        'cancel_url': reverse('user_list')
+    }
+    return render(request, 'auth/usuarios/form.html', context)
