@@ -1,0 +1,53 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Despacho #{{ despacho.numero_despacho }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Información General</h4>
+                    <dl class="row">
+                        <dt class="col-sm-4">Cliente:</dt>
+                        <dd class="col-sm-8">{{ despacho.cliente.get_full_name }}</dd>
+                        
+                        <dt class="col-sm-4">Estado:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-{{ despacho.estado|lower }}">
+                                {{ despacho.get_estado_display }}
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Fecha de Creación:</dt>
+                        <dd class="col-sm-8">{{ despacho.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+                        
+                        <dt class="col-sm-4">Dirección de Entrega:</dt>
+                        <dd class="col-sm-8">{{ despacho.direccion_entrega }}</dd>
+                        
+                        <dt class="col-sm-4">Observaciones:</dt>
+                        <dd class="col-sm-8">{{ despacho.observaciones|default:"Sin observaciones" }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url 'inventario:despacho_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a la lista
+                </a>
+                {% if despacho.estado == 'pendiente' %}
+                <a href="{% url 'inventario:despacho_edit' despacho.pk %}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
+                <a href="{% url 'inventario:despacho_estado' despacho.pk %}" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Actualizar Estado
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

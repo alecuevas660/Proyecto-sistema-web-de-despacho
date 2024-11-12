@@ -61,7 +61,7 @@
 
                     <!-- Órdenes -->
                     <li class="nav-item">
-                        <a class="nav-link"
+                        <a class="nav-link {% if request.resolver_match.namespace == 'ordenes' %}active{% endif %}"
                            href="#ordenesSubmenu"
                            data-bs-toggle="collapse"
                            role="button"
@@ -69,15 +69,18 @@
                            aria-controls="ordenesSubmenu">
                             <i class="fas fa-shopping-cart"></i> Órdenes
                         </a>
-                        <div class="collapse" id="ordenesSubmenu">
+                        <div class="collapse {% if request.resolver_match.namespace == 'ordenes' %}show{% endif %}" 
+                             id="ordenesSubmenu">
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'orden_list' %}active{% endif %}" 
+                                       href="{% url 'inventario:despacho_list' %}">
                                         <i class="fas fa-list"></i> Lista de Órdenes
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'orden_create' %}active{% endif %}" 
+                                       href="{% url 'inventario:despacho_create' %}">
                                         <i class="fas fa-plus"></i> Nueva Orden
                                     </a>
                                 </li>
@@ -85,6 +88,7 @@
                         </div>
                     </li>
 
+                
                     <!-- Seguimiento -->
                     <li class="nav-item">
                         <a class="nav-link"

@@ -31,12 +31,11 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'apps.users.apps.UsersConfig',  # Cambiado de useraccount a users
+    'apps.users.apps.UsersConfig',
     'apps.home.apps.HomeConfig',
     'apps.inventario.apps.InventarioConfig',
-    'apps.users.apps.UsersConfig',
-    'apps.inventario.apps.InventarioConfig',
     'apps.ventas.apps.VentasConfig',
+    'apps.ordenes.apps.OrdenesConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + ["django_browser_reload"]
@@ -212,7 +211,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),  # Asegúrate de que esta línea esté aquí
+            os.path.join(BASE_DIR, 'templates'),  # Asegúrate de que esta línea esté presente
         ],
         'APP_DIRS': True,
         'OPTIONS': {

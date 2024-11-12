@@ -9,4 +9,5 @@ urlpatterns = [
     path('inventario/', include(('apps.inventario.urls', 'inventario'), namespace='inventario')),
     path('accounts/', include('django.contrib.auth.urls')),
     path("__reload__/", include("django_browser_reload.urls")),
+    path('ordenes/', include(('apps.ordenes.urls', 'ordenes'), namespace='ordenes')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

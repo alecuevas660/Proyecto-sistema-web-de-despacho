@@ -1,10 +1,11 @@
 from django.shortcuts import redirect, render
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, F
-from .models import Product, StockVariable, Categoria
+from django.forms import inlineformset_factory, forms
+from .models import Product, StockVariable, Categoria, Despacho, DetalleDespacho, EstadoDespacho
 from django.contrib import messages
 from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
@@ -15,6 +16,8 @@ from django.core.exceptions import ValidationError
 from openpyxl import Workbook
 from datetime import datetime, timedelta
 from django.utils import timezone
+from apps.users.models import User
+from django import forms
 
 # Create your views here.
 
@@ -356,3 +359,141 @@ def exportar_inventario(request):
 
     wb.save(response)
     return response
+
+class DespachoListView(LoginRequiredMixin, ListView):
+    model = Despacho
+    template_name = 'inventario/despacho_list.html'
+    context_object_name = 'despachos'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.role == 'client':
+            queryset = queryset.filter(cliente=self.request.user)
+        
+        # Búsqueda
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(numero_despacho__icontains=search)
+        
+        return queryset.select_related('cliente')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['estados'] = EstadoDespacho.CHOICES
+        return context
+
+# Crear el FormSet para DetalleDespacho
+DetalleDespachoFormSet = inlineformset_factory(
+    Despacho,
+    DetalleDespacho,
+    fields=['producto', 'cantidad', 'precio_unitario'],
+    extra=1,
+    can_delete=True,
+    min_num=1,
+    validate_min=True,
+    widgets={
+        'producto': forms.Select(attrs={
+            'class': 'form-control select2',
+            'required': 'required'
+        }),
+        'cantidad': forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '1',
+            'required': 'required'
+        }),
+        'precio_unitario': forms.NumberInput(attrs={
+            'class': 'form-control',
+            'readonly': 'readonly'
+        })
+    }
+)
+
+class DespachoCreateView(LoginRequiredMixin, CreateView):
+    model = Despacho
+    fields = ['direccion_entrega', 'observaciones']
+    template_name = 'inventario/despacho_form.html'
+    success_url = reverse_lazy('inventario:despacho_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['clientes'] = User.objects.filter(is_active=True)
+        context['productos'] = Product.objects.filter(activo=True)
+        context['estados'] = EstadoDespacho.CHOICES
+        if self.request.POST:
+            context['detalles'] = DetalleDespachoFormSet(
+                self.request.POST,
+                instance=self.object if self.object else None
+            )
+        else:
+            context['detalles'] = DetalleDespachoFormSet(
+                instance=self.object if self.object else None
+            )
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        detalles_formset = context['detalles']
+        
+        try:
+            with transaction.atomic():
+                # Primero guardamos el despacho
+                self.object = form.save(commit=False)
+                self.object.cliente = self.request.user
+                self.object.save()
+
+                # Ahora guardamos los detalles
+                if detalles_formset.is_valid():
+                    detalles = detalles_formset.save(commit=False)
+                    for detalle in detalles:
+                        detalle.despacho = self.object  # Asignamos el despacho al detalle
+                        if not detalle.precio_unitario and detalle.producto:
+                            detalle.precio_unitario = detalle.producto.price
+                        detalle.save()
+                    
+                    # Eliminamos los detalles marcados para eliminar
+                    for detalle in detalles_formset.deleted_objects:
+                        detalle.delete()
+                    
+                    # Actualizamos el total
+                    self.object.actualizar_total()
+                else:
+                    raise ValidationError('Error en los detalles del despacho')
+
+                messages.success(self.request, 'Despacho creado exitosamente')
+                return HttpResponseRedirect(self.get_success_url())
+        except ValidationError as e:
+            messages.error(self.request, str(e))
+            return self.form_invalid(form)
+        except Exception as e:
+            messages.error(self.request, f'Error al crear el despacho: {str(e)}')
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Por favor corrija los errores en el formulario')
+        return super().form_invalid(form)
+
+class DespachoDetailView(LoginRequiredMixin, DetailView):
+    model = Despacho
+    template_name = 'inventario/despacho_detail.html'
+    context_object_name = 'despacho'
+
+class DespachoUpdateView(LoginRequiredMixin, UpdateView):
+    model = Despacho
+    fields = ['direccion_entrega', 'observaciones', 'estado']
+    template_name = 'inventario/despacho_form.html'
+    success_url = reverse_lazy('inventario:despacho_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Despacho actualizado exitosamente')
+        return super().form_valid(form)
+
+class DespachoEstadoUpdateView(LoginRequiredMixin, UpdateView):
+    model = Despacho
+    fields = ['estado']
+    template_name = 'inventario/despacho_estado_form.html'
+    success_url = reverse_lazy('inventario:despacho_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Estado actualizado exitosamente')
+        return super().form_valid(form)

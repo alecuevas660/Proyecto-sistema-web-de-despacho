@@ -15,4 +15,9 @@ urlpatterns = [
     path('producto/<uuid:pk>/stock/', views.StockUpdateView.as_view(), name='stock_update'),
     path('exportar/', views.exportar_inventario, name='exportar_inventario'),
     path('configurar-reporte/', views.configurar_reporte, name='configurar_reporte'),
+    path('despachos/', views.DespachoListView.as_view(), name='despacho_list'),
+    path('despacho/crear/', views.DespachoCreateView.as_view(), name='despacho_create'),
+    path('despacho/<uuid:pk>/', views.DespachoDetailView.as_view(), name='despacho_detail'),
+    path('despacho/<uuid:pk>/editar/', views.DespachoUpdateView.as_view(), name='despacho_edit'),
+    path('despacho/<uuid:pk>/estado/', views.DespachoEstadoUpdateView.as_view(), name='despacho_estado'),
 ]

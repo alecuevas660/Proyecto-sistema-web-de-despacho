@@ -1,0 +1,322 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme/dist/select2-bootstrap4.min.css" rel="stylesheet">
+<style>
+    .select2-container--bootstrap4 .select2-selection--single {
+        height: calc(1.5em + 0.75rem + 2px);
+    }
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0,0,0,.125);
+    }
+    .table th {
+        background-color: #f8f9fa;
+    }
+    .select2-container {
+        width: 100% !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">{% if form.instance.pk %}Editar{% else %}Nuevo{% endif %} Despacho</h3>
+                <span class="badge bg-primary">{{ form.instance.numero_despacho|default:"Nuevo" }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <form method="post" id="despacho-form">
+                {% csrf_token %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información Principal</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="id_cliente" class="form-label">
+                                        <i class="fas fa-user"></i> Cliente *
+                                    </label>
+                                    <select name="cliente" id="id_cliente" class="form-control select2" required>
+                                        <option value="">Seleccione un cliente</option>
+                                        {% for cliente in clientes %}
+                                        <option value="{{ cliente.id }}" {% if form.instance.cliente_id == cliente.id %}selected{% endif %}>
+                                            {{ cliente.get_full_name }} ({{ cliente.email }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.cliente.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.cliente.errors|join:", " }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_estado" class="form-label">
+                                        <i class="fas fa-tasks"></i> Estado
+                                    </label>
+                                    <select name="estado" id="id_estado" class="form-control">
+                                        {% for value, label in estados %}
+                                        <option value="{{ value }}" {% if form.instance.estado == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if form.estado.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.estado.errors|join:", " }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Información de Entrega</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.direccion_entrega.id_for_label }}" class="form-label">
+                                        <i class="fas fa-map-marker-alt"></i> Dirección de Entrega *
+                                    </label>
+                                    {{ form.direccion_entrega }}
+                                    {% if form.direccion_entrega.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.direccion_entrega.errors|join:", " }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.observaciones.id_for_label }}" class="form-label">
+                                        <i class="fas fa-comment"></i> Observaciones
+                                    </label>
+                                    {{ form.observaciones }}
+                                    {% if form.observaciones.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.observaciones.errors|join:", " }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-box"></i> Productos</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ detalles.management_form }}
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="detalles-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto *</th>
+                                        <th>Stock Disponible</th>
+                                        <th>Cantidad *</th>
+                                        <th>Precio Unitario</th>
+                                        <th>Subtotal</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detalles-container">
+                                    {% for form in detalles.forms %}
+                                    <tr class="detalle-form">
+                                        <td>
+                                            <select name="{{ form.producto.html_name }}" 
+                                                    class="form-control select2 producto-select" 
+                                                    required>
+                                                <option value="">Seleccione un producto</option>
+                                                {% for producto in productos %}
+                                                <option value="{{ producto.id }}" 
+                                                        data-precio="{{ producto.price }}"
+                                                        data-stock="{{ producto.get_stock_actual }}">
+                                                    {{ producto.name }} (Stock: {{ producto.get_stock_actual }})
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td class="stock-disponible">-</td>
+                                        <td style="width: 150px;">
+                                            <input type="number" 
+                                                   name="{{ form.cantidad.html_name }}"
+                                                   class="form-control cantidad-input"
+                                                   min="1" 
+                                                   required>
+                                        </td>
+                                        <td style="width: 150px;">
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" 
+                                                       name="{{ form.precio_unitario.html_name }}"
+                                                       class="form-control precio-unitario"
+                                                       readonly>
+                                            </div>
+                                        </td>
+                                        <td class="subtotal text-end">$0.00</td>
+                                        <td>
+                                            {% if forloop.first %}
+                                            <button type="button" class="btn btn-success btn-sm add-form" title="Agregar producto">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="button" class="btn btn-danger btn-sm remove-form" title="Eliminar producto">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="4" class="text-end">Total:</th>
+                                        <th class="text-end" id="total-despacho">$0.00</th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{% url 'inventario:despacho_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {% if form.instance.pk %}Guardar{% else %}Crear{% endif %} Despacho
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Inicializar Select2 para todos los selects
+    $('.select2').select2({
+        theme: 'bootstrap4',
+        placeholder: 'Seleccione una opción'
+    });
+
+    // Función para actualizar el stock disponible
+    function actualizarStockDisponible(row) {
+        var producto = row.find('.producto-select option:selected');
+        var stock = producto.data('stock') || 0;
+        row.find('.stock-disponible').text(stock);
+    }
+
+    // Función para calcular subtotal
+    function calcularSubtotal(row) {
+        var cantidad = parseFloat(row.find('.cantidad-input').val()) || 0;
+        var precio = parseFloat(row.find('.precio-unitario').val()) || 0;
+        var subtotal = cantidad * precio;
+        row.find('.subtotal').text('$' + subtotal.toFixed(2));
+        return subtotal;
+    }
+
+    // Función para actualizar el total
+    function actualizarTotal() {
+        var total = 0;
+        $('.detalle-form').each(function() {
+            total += calcularSubtotal($(this));
+        });
+        $('#total-despacho').text('$' + total.toFixed(2));
+    }
+
+    // Actualizar precios y stock cuando cambia el producto
+    $(document).on('change', '.producto-select', function() {
+        var row = $(this).closest('tr');
+        var option = $(this).find('option:selected');
+        var precio = option.data('precio');
+        
+        row.find('.precio-unitario').val(precio);
+        actualizarStockDisponible(row);
+        actualizarTotal();
+    });
+
+    // Validar cantidad según stock disponible
+    $(document).on('change', '.cantidad-input', function() {
+        var row = $(this).closest('tr');
+        var cantidad = parseInt($(this).val()) || 0;
+        var stock = parseInt(row.find('.stock-disponible').text()) || 0;
+        
+        if (cantidad > stock) {
+            alert('La cantidad no puede ser mayor al stock disponible');
+            $(this).val(stock);
+        }
+        
+        actualizarTotal();
+    });
+
+    // Manejar formularios dinámicos
+    let formCount = parseInt($('#id_detalles-TOTAL_FORMS').val());
+    const formTemplate = $('.detalle-form:first').clone();
+
+    $('.add-form').click(function() {
+        const newForm = formTemplate.clone();
+        formCount++;
+        
+        // Limpiar valores
+        newForm.find('input, select').val('');
+        newForm.find('.subtotal').text('$0.00');
+        newForm.find('.stock-disponible').text('-');
+        
+        // Actualizar botones
+        newForm.find('.add-form')
+            .removeClass('btn-success add-form')
+            .addClass('btn-danger remove-form')
+            .attr('title', 'Eliminar producto')
+            .find('i')
+            .removeClass('fa-plus')
+            .addClass('fa-minus');
+        
+        $('#detalles-container').append(newForm);
+        
+        // Reinicializar Select2
+        newForm.find('.select2').select2({
+            theme: 'bootstrap4',
+            placeholder: 'Seleccione un producto'
+        });
+        
+        $('#id_detalles-TOTAL_FORMS').val(formCount + 1);
+        actualizarTotal();
+    });
+
+    $(document).on('click', '.remove-form', function() {
+        $(this).closest('tr').remove();
+        formCount--;
+        $('#id_detalles-TOTAL_FORMS').val(formCount + 1);
+        actualizarTotal();
+    });
+
+    // Calcular totales iniciales
+    $('.detalle-form').each(function() {
+        actualizarStockDisponible($(this));
+    });
+    actualizarTotal();
+});
+</script>
+{% endblock %} 

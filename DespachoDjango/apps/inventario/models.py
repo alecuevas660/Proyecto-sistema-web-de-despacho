@@ -273,3 +273,93 @@ class ReporteFinanciero(models.Model):
 
     def __str__(self):
         return f"Reporte Financiero {self.fecha_inicio} - {self.fecha_fin}"
+
+class EstadoDespacho:
+    PENDIENTE = 'pendiente'
+    CONFIRMADO = 'confirmado'
+    EN_PREPARACION = 'en_preparacion'
+    EN_RUTA = 'en_ruta'
+    ENTREGADO = 'entregado'
+    CANCELADO = 'cancelado'
+
+    CHOICES = [
+        (PENDIENTE, 'Pendiente'),
+        (CONFIRMADO, 'Confirmado'),
+        (EN_PREPARACION, 'En Preparación'),
+        (EN_RUTA, 'En Ruta'),
+        (ENTREGADO, 'Entregado'),
+        (CANCELADO, 'Cancelado'),
+    ]
+
+class Despacho(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    numero_despacho = models.CharField(max_length=10, unique=True, editable=False)
+    cliente = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='despachos'
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=EstadoDespacho.CHOICES,
+        default=EstadoDespacho.PENDIENTE
+    )
+    direccion_entrega = models.TextField()
+    observaciones = models.TextField(blank=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"Despacho #{self.numero_despacho}"
+
+    def save(self, *args, **kwargs):
+        if not self.numero_despacho:
+            last_despacho = Despacho.objects.order_by('-numero_despacho').first()
+            if last_despacho:
+                last_number = int(last_despacho.numero_despacho[3:])
+                self.numero_despacho = f'DS-{str(last_number + 1).zfill(6)}'
+            else:
+                self.numero_despacho = 'DS-000001'
+        super().save(*args, **kwargs)
+
+    def actualizar_total(self):
+        self.total = sum(detalle.subtotal for detalle in self.detalles.all())
+        self.save()
+
+class DetalleDespacho(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    despacho = models.ForeignKey(
+        Despacho,
+        on_delete=models.CASCADE,
+        related_name='detalles'
+    )
+    producto = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name='detalles_despacho'
+    )
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+
+    @property
+    def subtotal(self):
+        if self.cantidad is None or self.precio_unitario is None:
+            return 0
+        return self.cantidad * self.precio_unitario
+
+    def save(self, *args, **kwargs):
+        if not self.precio_unitario and self.producto:
+            self.precio_unitario = self.producto.price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.producto.name if self.producto else 'Sin producto'} - {self.cantidad} unidades"
+
+    class Meta:
+        verbose_name = 'Detalle de Despacho'
+        verbose_name_plural = 'Detalles de Despacho'
