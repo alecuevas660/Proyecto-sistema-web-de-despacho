@@ -75,6 +75,12 @@ class HomeView(LoginRequiredMixin, TemplateView):
         nombres_productos = [detalle['producto__name'] for detalle in detalle_ventas]
         cantidad_productos = [detalle['total_cantidad'] for detalle in detalle_ventas]
 
+        # Si no hay productos vendidos, asignar valores predeterminados
+        if not nombres_productos:
+            nombres_productos = ['Sin productos vendidos']
+            cantidad_productos = [0]
+
+
         #print(nombres_productos)
         #print(cantidad_productos)
         #print(ventas_labels_meses)
