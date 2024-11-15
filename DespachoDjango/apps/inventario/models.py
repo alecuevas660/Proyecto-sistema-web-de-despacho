@@ -79,11 +79,11 @@ class Product(models.Model):
     def get_stock_status(self):
         """Retorna el estado del stock basado en el stock actual y mínimo"""
         stock_actual = self.get_stock_actual()
-        if stock_actual >= self.stock_minimo * 3/3:  # 100% o más del mínimo
+        if stock_actual >= self.stock_minimo:  # 100% o más del mínimo
             return ('Óptimo', 'success')
-        elif stock_actual >= self.stock_minimo * 2/3:  # 66% o más del mínimo
+        elif stock_actual >= self.stock_minimo * 1/3:  # 33% o más del mínimo
             return ('Bajo', 'warning')
-        else:  # Menos del 66% del mínimo
+        else:  # Menos del 33% del mínimo
             return ('Crítico', 'danger')
 
     def clean(self):
