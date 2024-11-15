@@ -57,6 +57,7 @@
                     <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
                     
                         <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_pdf=true" class="btn btn-success">Descargar PDF</a>
+                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_excel=true" class="btn btn-success">Descargar Excel</a>
                     
                 </form>
             </div>

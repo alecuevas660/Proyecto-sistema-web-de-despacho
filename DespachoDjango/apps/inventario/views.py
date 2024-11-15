@@ -19,6 +19,8 @@ from django.utils import timezone
 from xhtml2pdf import pisa
 from io import BytesIO
 from django.template.loader import render_to_string
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 # Create your views here.
 
@@ -432,7 +434,11 @@ def reporte_inventario(request):
 
     # Verificar si se solicita descargar el PDF
     if 'descargar_pdf' in request.GET:
-        return generar_pdf(request, productos_inventario, total_valor_inventario, categorias)
+        return generar_pdf_reporte_inventario(request, productos_inventario, total_valor_inventario, categorias)
+    
+    # Verificar si se solicita descargar el Excel
+    if 'descargar_excel' in request.GET:
+        return generar_excel_reporte_inventario(productos_inventario, total_valor_inventario)
 
     # Renderizar el reporte en la vista HTML normal
     return render(request, 'inventario/reporte_inventario.html', {
@@ -442,7 +448,7 @@ def reporte_inventario(request):
     })
 
 
-def generar_pdf(request, productos_inventario, total_valor_inventario, categorias):
+def generar_pdf_reporte_inventario(request, productos_inventario, total_valor_inventario, categorias):
     """Genera el PDF del reporte inventario a partir del template HTML"""
 
     # Renderizar el template a HTML utilizando render_to_string
@@ -471,7 +477,53 @@ def generar_pdf(request, productos_inventario, total_valor_inventario, categoria
     
     return response
 
-def generar_reporte_general(): #Plantilla para realizar reporte general
+def generar_excel_reporte_inventario(productos_inventario, total_valor_inventario):
+    # Crear un nuevo Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte de Inventario"
+
+    # Agregar encabezados
+    headers = [
+        "Nombre del Producto", 
+        "Categoría", 
+        "Descripción", 
+        "Precio", 
+        "Stock Mínimo", 
+        "Stock Actual", 
+        "Estado del Stock", 
+        "Valor Total en Inventario"
+    ]
+    for col_num, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = Font(bold=True)
+
+    # Agregar datos de productos
+    for row_num, producto in enumerate(productos_inventario, start=2):
+        ws.cell(row=row_num, column=1, value=producto['producto'].name)
+        ws.cell(row=row_num, column=2, value=producto['producto'].categoria.nombre)
+        ws.cell(row=row_num, column=3, value=producto['producto'].description)
+        ws.cell(row=row_num, column=4, value=float(producto['producto'].price))
+        ws.cell(row=row_num, column=5, value=producto['producto'].stock_minimo)
+        ws.cell(row=row_num, column=6, value=producto['stock_actual'])
+        ws.cell(row=row_num, column=7, value=producto['stock_status'][0])  # Estado
+        ws.cell(row=row_num, column=8, value=float(producto['valor_inventario']))
+
+    # Agregar total del inventario al final
+    total_row = len(productos_inventario) + 2
+    ws.cell(row=total_row, column=1, value="Valor Total del Inventario")
+    ws.cell(row=total_row, column=8, value=float(total_valor_inventario))
+    ws.cell(row=total_row, column=1).font = Font(bold=True)
+
+    # Preparar respuesta HTTP con el archivo Excel
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response['Content-Disposition'] = 'attachment; filename="reporte_inventario.xlsx"'
+
+    # Guardar el Workbook en el response
+    wb.save(response)
+    return response
+
+def reporte_general_inventario(): #Plantilla para realizar reporte general
     productos = Product.objects.filter(activo=True)
     reporte_data = []
     total_valor_inventario = Decimal('0.00')
@@ -495,7 +547,7 @@ def generar_reporte_general(): #Plantilla para realizar reporte general
 
     return reporte_data, total_valor_inventario
 
-def generar_reporte_por_categoria(categoria_id): #Plantilla para realizar reporte por categoria
+def reporte_por_categoria_inventario(categoria_id): #Plantilla para realizar reporte por categoria
     categoria = Categoria.objects.get(id=categoria_id)
     productos = categoria.productos.filter(activo=True)
     reporte_data = []
@@ -520,7 +572,7 @@ def generar_reporte_por_categoria(categoria_id): #Plantilla para realizar report
 
     return reporte_data, total_valor_inventario
 
-def generar_reporte_bajos_en_stock(): #Plantilla para realizar reporte bajos en stock
+def reporte_bajos_en_stock_inventario(): #Plantilla para realizar reporte bajos en stock
     productos = Product.objects.filter(activo=True)
     reporte_data = []
     total_valor_inventario = Decimal('0.00')
