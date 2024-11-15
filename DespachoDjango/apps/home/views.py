@@ -18,8 +18,31 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         now = timezone.now()
 
-        # Obtener las ventas del mes actual
+        # Obtener las ventas del día actual
         monto_ventas_dia = Venta.objects.filter(fecha_venta__day=now.day).aggregate(Sum('total'))['total__sum'] or 0
+
+        # Convertir el monto a un valor entero
+        monto_ventas_dia = int(monto_ventas_dia)
+
+        # Obtener las ventas del día anterior
+        ayer = now - timedelta(days=1)
+        monto_ventas_ayer = Venta.objects.filter(fecha_venta__day=ayer.day).aggregate(Sum('total'))['total__sum'] or 0
+        monto_ventas_ayer = int(monto_ventas_ayer)
+
+        # Calcular el porcentaje de cambio
+        if monto_ventas_ayer > 0:
+            porcentaje_incremento = ((monto_ventas_dia - monto_ventas_ayer) / monto_ventas_ayer) * 100
+        else:
+            porcentaje_incremento = 0  # Si no hay ventas ayer, no hay cambio
+
+        # Determinar la dirección de la flecha
+        if porcentaje_incremento > 0:
+            direccion_flecha = 'up'  # Flecha hacia arriba si hubo incremento
+        elif porcentaje_incremento < 0:
+            direccion_flecha = 'down'  # Flecha hacia abajo si hubo decremento
+        else:
+            direccion_flecha = 'none'  # Si no hubo cambio
+
 
         # Obtener las ventas anuales
         ventas_anio = Venta.objects.filter(fecha_venta__year=now.year).values('fecha_venta__month').annotate(ventas_mes=Sum('total')).order_by('fecha_venta__month')
@@ -60,6 +83,8 @@ class HomeView(LoginRequiredMixin, TemplateView):
         # Datos para el dashboard
         context.update({
             'monto_ventas_dia': monto_ventas_dia,
+            'porcentaje_incremento': round(porcentaje_incremento, 2),  # Redondear el porcentaje a 2 decimales
+            'direccion_flecha': direccion_flecha,
             'ventas_labels_meses': ventas_labels_meses,
             'ventas_data_meses': ventas_data_meses,
             'nombres_productos' : nombres_productos,

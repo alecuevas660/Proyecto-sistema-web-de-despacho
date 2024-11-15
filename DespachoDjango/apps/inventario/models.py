@@ -201,7 +201,7 @@ class OrdenDespacho(models.Model):
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f"Orden #{self.id} - Cliente: {self.cliente.get_full_name()}"
+        return f"Orden #{self.id} - Cliente: {self.cliente.get_full_name()}- Transportista: {self.transportista.get_full_name()}"
 
 class SeguimientoEnvio(models.Model):
     """Modelo que representa el seguimiento de un envío."""

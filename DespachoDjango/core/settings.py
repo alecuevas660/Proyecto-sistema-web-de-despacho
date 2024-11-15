@@ -35,8 +35,8 @@ LOCAL_APPS = [
     'apps.home.apps.HomeConfig',
     'apps.inventario.apps.InventarioConfig',
     'apps.users.apps.UsersConfig',
-    'apps.inventario.apps.InventarioConfig',
     'apps.ventas.apps.VentasConfig',
+    'apps.reportes.apps.ReportesConfig',  # página de reportes de prueba
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + ["django_browser_reload"]
