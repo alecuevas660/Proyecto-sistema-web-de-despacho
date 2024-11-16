@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import redirect, render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -15,6 +16,11 @@ from django.core.exceptions import ValidationError
 from openpyxl import Workbook
 from datetime import datetime, timedelta
 from django.utils import timezone
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.template.loader import render_to_string
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
 # Create your views here.
 
