@@ -20,7 +20,6 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
         # Obtener las ventas del día actual
         monto_ventas_dia = Venta.objects.filter(fecha_venta__day=now.day).aggregate(Sum('total'))['total__sum'] or 0
-
         # Convertir el monto a un valor entero
         monto_ventas_dia = int(monto_ventas_dia)
 
@@ -34,6 +33,9 @@ class HomeView(LoginRequiredMixin, TemplateView):
             porcentaje_incremento = ((monto_ventas_dia - monto_ventas_ayer) / monto_ventas_ayer) * 100
         else:
             porcentaje_incremento = 0  # Si no hay ventas ayer, no hay cambio
+
+            # Imprimir el porcentaje de incremento para depuración
+            print(f"El valor del porcentaje_incremento es: {porcentaje_incremento}")
 
         # Determinar la dirección de la flecha
         if porcentaje_incremento > 0:

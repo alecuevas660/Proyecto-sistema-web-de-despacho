@@ -9,7 +9,8 @@ urlpatterns = [
     path('', include(('apps.home.urls', 'home'), namespace='home')),
     path('admin/', admin.site.urls),
     path('inventario/', include('apps.inventario.urls', namespace='inventario')),
-    path('reportes/', include(('apps.reportes.urls', 'reportes'), namespace='reportes')), #ruta de reportes de prueba
+    path('reportebackend/', include(('apps.reportebackend.urls', 'reportebackend'), namespace='reportebackend')),
+
     
     # Rutas de autenticación
     path('login/', auth_views.LoginView.as_view(

@@ -1,4 +1,3 @@
-from apps.inventario.models import OrdenDespacho  # Importar el modelo desde la aplicación inventario
 from django.shortcuts import render
 from django.views.generic import ListView
 from django.db.models import Q
@@ -6,7 +5,7 @@ from apps.inventario.models import OrdenDespacho
 
 class ReporteView(ListView):
     model = OrdenDespacho
-    template_name = 'reportes.html'
+    template_name = 'reportebackend.html'
     context_object_name = 'ordenes_despacho'
     paginate_by = 5  # Número de objetos por página
 
