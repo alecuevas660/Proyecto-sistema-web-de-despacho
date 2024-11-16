@@ -1,11 +1,11 @@
 from decimal import Decimal
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.db import models
 from django.db.models import Q, F
-from .models import Product, StockVariable, Categoria
+from .models import Product, SeguimientoEnvio, StockVariable, Categoria
 from django.contrib import messages
 from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
