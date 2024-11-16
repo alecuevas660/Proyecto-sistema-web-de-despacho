@@ -8,6 +8,8 @@ from django.db.models import Q
 from django.contrib.auth import logout
 from .models import User, ClienteProfile, EmployeeProfile
 from .forms import ClienteForm, EmployeeForm, ClienteUpdateForm, EmployeeUpdateForm
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
 
 def is_admin_or_employee(user):
     """Verifica si el usuario es admin o empleado con permisos de staff"""
@@ -28,32 +30,71 @@ class UserListView(BaseUserView, ListView):
     """Vista para listar usuarios según su tipo"""
     template_name = 'auth/usuarios/lista.html'
     context_object_name = 'users'
-    paginate_by = 10
-    
+    paginate_by = 6  # Máximo 6 usuarios por página
+
     def get_queryset(self):
-        queryset = super().get_queryset()
-        user_type = self.kwargs.get('user_type') or self.extra_context.get('user_type', 'all')
-        print(f"User type: {user_type}")
-        
+        user_type = self.kwargs.get('user_type')
+        search_query = self.request.GET.get('search', '')
+        filter_attribute = self.request.GET.get('filter', '')
+
         if user_type == 'clients':
-            queryset = queryset.filter(role='client')
+            queryset = User.objects.filter(role='client').select_related('cliente_profile')
+            if search_query:
+                queryset = queryset.filter(
+                    Q(nombre__icontains=search_query) |  # Buscamos en el campo 'nombre'
+                    Q(email__icontains=search_query) |  # Buscamos en el campo 'email'
+                    Q(cliente_profile__nombre_supermercado__icontains=search_query)  # Buscamos en el 'supermercado'
+                )
+            if filter_attribute:
+                if filter_attribute == 'supermercado':
+                    queryset = queryset.filter(cliente_profile__nombre_supermercado__icontains=search_query)
+                elif filter_attribute == 'estado':
+                    queryset = queryset.filter(is_active=True) if search_query.lower() == 'activo' else queryset.filter(is_active=False)
+
         elif user_type == 'employees':
-            queryset = queryset.filter(role='employee')
-            
-        print(f"Query count: {queryset.count()}")
+            queryset = User.objects.filter(role='employee').select_related('employee_profile')
+            if search_query:
+                queryset = queryset.filter(
+                    Q(nombre__icontains=search_query) |  # Buscamos en el campo 'nombre'
+                    Q(email__icontains=search_query) |  # Buscamos en el campo 'email'
+                    Q(employee_profile__cargo__icontains=search_query)  # Buscamos en el 'cargo'
+                )
+            if filter_attribute:
+                if filter_attribute == 'cargo':
+                    queryset = queryset.filter(employee_profile__cargo__icontains=search_query)
+                elif filter_attribute == 'estado':
+                    queryset = queryset.filter(is_active=True) if search_query.lower() == 'activo' else queryset.filter(is_active=False)
+
+        else:
+            queryset = User.objects.none()  # En caso de un tipo no válido
+
         return queryset.order_by('-date_joined')
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user_type = self.kwargs.get('user_type') or self.extra_context.get('user_type', 'all')
-        
+        queryset = self.get_queryset()
+
+        # Paginación
+        paginator = Paginator(queryset, self.paginate_by)
+        page = self.request.GET.get('page')
+        try:
+            users = paginator.page(page)
+        except PageNotAnInteger:
+            users = paginator.page(1)
+        except EmptyPage:
+            users = paginator.page(paginator.num_pages)
+
         context.update({
-            'user_type': user_type,
+            'user_type': self.kwargs.get('user_type'),
+            'users': users,
             'search_query': self.request.GET.get('search', ''),
-            'title': 'Clientes' if user_type == 'clients' else 'Empleados'
+            'filter_attribute': self.request.GET.get('filter', ''),
+            'title': 'Clientes' if self.kwargs.get('user_type') == 'clients' else 'Empleados',
         })
-        print(f"Context: {context}")
         return context
+
+
+
 
 class UserCreateView(BaseUserView, CreateView):
     """Vista para crear nuevos usuarios"""
