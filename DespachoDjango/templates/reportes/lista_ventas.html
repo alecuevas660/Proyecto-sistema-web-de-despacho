@@ -1,0 +1,38 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+  <h1>Lista de Ventas</h1>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Número de Venta</th>
+        <th>Cliente</th>
+        <th>Vendedor</th>
+        <th>Estado</th>
+        <th>Fecha de Venta</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for venta in ventas %}
+        <tr>
+          <td>{{ venta.numero_venta }}</td>
+          <td>{{ venta.cliente.cliente_profile.nombre_supermercado }}</td>
+          <td>{{ venta.vendedor.get_full_name }}</td>
+          <td>{{ venta.get_estado_display }}</td>
+          <td>{{ venta.fecha_venta }}</td>
+          <td>
+            <a href="{% url 'descargar_informe_venta_pdf' venta.id %}" class="btn btn-primary">
+              Descargar PDF
+            </a>
+            <a href="{% url 'descargar_informe_venta_excel' venta.id %}" class="btn btn-success">
+              Descargar Excel
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock %}

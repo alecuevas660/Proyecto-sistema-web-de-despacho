@@ -1,5 +1,6 @@
 from decimal import Decimal
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from apps.ventas.models import Venta
 from apps.inventario.models import Categoria, Product
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -10,6 +11,45 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl import Workbook
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
+
+def lista_ventas(request):
+    """Vista que muestra una lista de todas las ventas con botones para generar los informes."""
+    ventas = Venta.objects.all()
+    return render(request, 'reportes/lista_ventas.html', {'ventas': ventas})
+
+def informe_venta_pdf(request, venta_id):
+    """Genera un informe de venta específico en PDF."""
+    venta = get_object_or_404(Venta, pk=venta_id)
+    
+    # Crear los datos para el informe
+    data = {
+        'cliente': venta.cliente.cliente_profile.nombre_supermercado,
+        'asignado_despacho': venta.vendedor.get_full_name(),
+        'productos': [
+            {
+                'nombre': detalle.producto.name,
+                'cantidad': detalle.cantidad,
+                'precio_unitario': detalle.precio_unitario,
+                'subtotal': detalle.subtotal,
+            }
+            for detalle in venta.detalles.all()
+        ],
+        'total': venta.total,
+    }
+
+    # Renderizar la plantilla HTML para el PDF
+    template = get_template('informe_venta_pdf.html')
+    html = template.render(data)
+
+    # Generar el archivo PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="informe_venta_{venta.numero_venta}.pdf"'
+
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('Error al generar el PDF', status=500)
+
+    return response
 
 def reporte_inventario(request):
     # Obtener filtros del request
