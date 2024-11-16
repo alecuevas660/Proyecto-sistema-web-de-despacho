@@ -245,14 +245,23 @@ class SeguimientoEnvio(models.Model):
         return f"Seguimiento de Orden #{self.orden.id} - {self.get_estado_envio_display()}"
 
 
+class Envio(models.Model):
+    descripcion = models.CharField(max_length=255)
+    fecha_envio = models.DateField()
+    estado = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.descripcion
+
+
 class EstadoEnvio(models.Model):
-    envio_id = models.ForeignKey('Envio', on_delete=models.CASCADE)
+    envio = models.ForeignKey('Envio', on_delete=models.CASCADE)
     estado = models.CharField(max_length=50)
     descripcion = models.TextField()
     fecha_actualizacion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.envio_id} - {self.estado}"
+        return f"{self.envio} - {self.estado}"
 
 
 class ReporteEnvios(models.Model):
