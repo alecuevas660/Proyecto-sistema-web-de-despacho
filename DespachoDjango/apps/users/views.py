@@ -26,7 +26,7 @@ class BaseUserView(LoginRequiredMixin, UserPassesTestMixin):
         messages.error(self.request, 'No tiene permisos para acceder a esta sección.')
         return redirect('home')  # Asegúrate de tener definida esta URL
 
-class UserListView(BaseUserView, ListView):
+class UsersListView(BaseUserView, ListView):
     """Vista para listar usuarios según su tipo"""
     template_name = 'auth/usuarios/lista.html'
     context_object_name = 'users'
@@ -94,7 +94,38 @@ class UserListView(BaseUserView, ListView):
         return context
 
 
+class UserListView(BaseUserView, ListView):
+    """Vista para listar usuarios según su tipo"""
+    template_name = 'auth/usuarios/lista.html'
+    context_object_name = 'users'
+    paginate_by = 10
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user_type = self.kwargs.get(
+            'user_type') or self.extra_context.get('user_type', 'all')
+        print(f"User type: {user_type}")
+
+        if user_type == 'clients':
+            queryset = queryset.filter(role='client')
+        elif user_type == 'employees':
+            queryset = queryset.filter(role='employee')
+
+        print(f"Query count: {queryset.count()}")
+        return queryset.order_by('-date_joined')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_type = self.kwargs.get(
+            'user_type') or self.extra_context.get('user_type', 'all')
+
+        context.update({
+            'user_type': user_type,
+            'search_query': self.request.GET.get('search', ''),
+            'title': 'Clientes' if user_type == 'clients' else 'Empleados'
+        })
+        print(f"Context: {context}")
+        return context
 
 class UserCreateView(BaseUserView, CreateView):
     """Vista para crear nuevos usuarios"""
