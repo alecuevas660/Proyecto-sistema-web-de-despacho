@@ -159,11 +159,17 @@ class DetalleCompra(models.Model):
         verbose_name_plural = 'Detalles de Compras'
 
     def __str__(self):
-        return f"Compra de {self.cantidad_productos} {self.producto.name}"
+        productos = ", ".join([producto.name for producto in self.producto.all()])
+        return f"Compra de {self.cantidad_productos} de stock de el(los) producto(s): {productos}"
     
     def clean(self):
-        if self.producto.stock_minimo < self.cantidad_productos:
-            raise ValidationError(f"No hay suficiente stock para el producto {self.producto.name}.")
+        productos = self.producto.all()  # Obtén todos los productos relacionados
+        for producto in productos:
+            if producto.get_stock_actual() < self.cantidad_productos:
+                raise ValidationError(
+                    f"No hay suficiente stock para el producto {producto.name}. "
+                    f"Stock actual: {producto.get_stock_actual()}, cantidad solicitada: {self.cantidad_productos}."
+                    )
 
     @property
     def total(self):
