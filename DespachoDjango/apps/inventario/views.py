@@ -382,3 +382,17 @@ def exportar_inventario(request):
 
     wb.save(response)
     return response
+
+def cambiar_estado_envio(request, seguimiento_id):
+    """Vista para cambiar el estado de un envío."""
+    if request.method == "POST":
+        seguimiento = get_object_or_404(SeguimientoEnvio, id=seguimiento_id)
+        nuevo_estado = request.POST.get("nuevo_estado")
+        comentarios = request.POST.get("comentarios", "")
+
+        try:
+            seguimiento.cambiar_estado(nuevo_estado, comentarios)
+            return JsonResponse({"success": True, "message": "Estado cambiado con éxito."})
+        except ValueError as e:
+            return JsonResponse({"success": False, "message": str(e)})
+    return JsonResponse({"success": False, "message": "Método no permitido."})

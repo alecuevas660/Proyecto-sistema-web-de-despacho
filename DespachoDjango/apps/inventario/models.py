@@ -227,6 +227,16 @@ class SeguimientoEnvio(models.Model):
         verbose_name = 'Seguimiento de Envío'
         verbose_name_plural = 'Seguimientos de Envíos'
         ordering = ['-fecha_actualizacion']
+    
+    def cambiar_estado(self, nuevo_estado, comentarios=""):
+        """Cambia el estado del envío y actualiza los comentarios."""
+        estados_validos = dict(EstadoEnvio.CHOICES)
+        if nuevo_estado not in estados_validos:
+            raise ValueError(f"Estado '{nuevo_estado}' no es válido.")
+
+        self.estado_envio = nuevo_estado
+        self.comentarios = comentarios
+        self.save()
 
     def __str__(self):
         return f"Seguimiento de Orden #{self.orden.id} - {self.get_estado_envio_display()}"
