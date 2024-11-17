@@ -5,9 +5,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.urls import reverse_lazy
 from django.db import models
 from django.db.models import Q, F
-from .models import Product, SeguimientoEnvio, StockVariable, Categoria
+from .models import OrdenDespacho, Product, SeguimientoEnvio, StockVariable, Categoria
 from django.contrib import messages
-from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm
+from .forms import ProductForm, SeleccionProductoOrdenForm, StockUpdateForm, ReporteInventarioForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
@@ -396,3 +396,19 @@ def cambiar_estado_envio(request, seguimiento_id):
         except ValueError as e:
             return JsonResponse({"success": False, "message": str(e)})
     return JsonResponse({"success": False, "message": "Método no permitido."})
+
+def seleccionar_productos_para_orden(request, orden_id):
+    orden = OrdenDespacho.objects.get(id=orden_id)  # Suponiendo que ya tienes una orden
+    if request.method == 'POST':
+        form = SeleccionProductoOrdenForm(request.POST)
+        if form.is_valid():
+            productos_seleccionados = form.cleaned_data['productos']
+            # Agregar los productos seleccionados a la orden de despacho
+            for producto in productos_seleccionados:
+                # Lógica para agregar los productos a la orden de despacho
+                orden.productos.add(producto)  # Asumiendo que hay una relación ManyToMany
+            return redirect('ruta_a_confirmacion')
+    else:
+        form = SeleccionProductoOrdenForm()
+
+    return render(request, 'nombre_template.html', {'form': form, 'orden': orden})
