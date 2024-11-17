@@ -314,7 +314,6 @@ class CrearOrdenDespachoView(CreateView):
 
         ¡Gracias por elegirnos!
         """
-
         self.enviar_correo(sender, password, cliente_email, subject, body_cliente)
 
         return response
