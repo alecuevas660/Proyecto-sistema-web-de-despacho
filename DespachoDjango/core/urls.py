@@ -9,6 +9,7 @@ urlpatterns = [
     path('', include(('apps.home.urls', 'home'), namespace='home')),
     path('admin/', admin.site.urls),
     path('inventario/', include('apps.inventario.urls', namespace='inventario')),
+    path('reportebackend/', include(('apps.reportebackend.urls', 'reportebackend'), namespace='reportebackend')),
     path('reportes/', include('apps.reportes.urls', namespace='reportes')),
     
     # Rutas de autenticación
