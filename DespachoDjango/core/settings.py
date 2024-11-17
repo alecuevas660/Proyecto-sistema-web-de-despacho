@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import sys
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,8 +38,8 @@ LOCAL_APPS = [
     'apps.home.apps.HomeConfig',
     'apps.inventario.apps.InventarioConfig',
     'apps.users.apps.UsersConfig',
-    'apps.inventario.apps.InventarioConfig',
     'apps.ventas.apps.VentasConfig',
+    'apps.reportebackend.apps.ReportebackendConfig',  
     'apps.reportes.apps.ReportesConfig',
 ]
 

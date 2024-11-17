@@ -2,13 +2,20 @@ from django.contrib import admin
 from django.urls import path, include, reverse_lazy
 from django.conf import settings
 from django.conf.urls.static import static
+
 from django.contrib.auth import views as auth_views
 from apps.users.views import logout_view
+
+from apps.home.views import HomeView
+from . import views
+
 
 urlpatterns = [
     path('', include(('apps.home.urls', 'home'), namespace='home')),
     path('admin/', admin.site.urls),
+
     path('inventario/', include('apps.inventario.urls', namespace='inventario')),
+    path('reportebackend/', include(('apps.reportebackend.urls', 'reportebackend'), namespace='reportebackend')),
     path('reportes/', include('apps.reportes.urls', namespace='reportes')),
     
     # Rutas de autenticación
@@ -36,4 +43,6 @@ urlpatterns = [
     # Rutas de usuarios
     path('accounts/', include(('apps.users.urls', 'users'), namespace='users')),
     path("__reload__/", include("django_browser_reload.urls")),
+
+    path('reportes/', views.reporte_view, name='reportes'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
