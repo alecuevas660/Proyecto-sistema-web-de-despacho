@@ -10,7 +10,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('inventario/', include('apps.inventario.urls', namespace='inventario')),
     path('reportebackend/', include(('apps.reportebackend.urls', 'reportebackend'), namespace='reportebackend')),
-
+    path('reportes/', include('apps.reportes.urls', namespace='reportes')),
     
     # Rutas de autenticación
     path('login/', auth_views.LoginView.as_view(

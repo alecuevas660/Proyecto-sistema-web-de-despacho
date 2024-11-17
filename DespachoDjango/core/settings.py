@@ -18,6 +18,8 @@ ALLOWED_HOSTS = []
 
 # Application definition
 DJANGO_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -37,6 +39,7 @@ LOCAL_APPS = [
     'apps.users.apps.UsersConfig',
     'apps.ventas.apps.VentasConfig',
     'apps.reportebackend.apps.ReportebackendConfig',  
+    'apps.reportes.apps.ReportesConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + ["django_browser_reload"]
@@ -73,6 +76,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'App.wsgi.application'
+
+# Configuración de Channels
+ASGI_APPLICATION = 'core.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 DATABASES = {
