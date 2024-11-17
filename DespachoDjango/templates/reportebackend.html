@@ -4,6 +4,11 @@
     <h1>Generar Reportes Financieros</h1>
     <hr>
 
+    <div>
+        <a href="{% url 'reportebackend:exportar_pdf' %}"  class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i>  PDF</a>
+        <a href="{% url 'reportebackend:exportar_excel' %}" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Excel</a>
+    </div> <br>
+    
     <!-- Filtro de búsqueda -->
     <div class="row mb-4">
         <div class="col-md-12">
@@ -30,7 +35,6 @@
                     <th style="width: 400px;">ID de la Orden</th>
                     <th>Cliente</th>
                     <th>Asignado a</th>
-                    <th>Descargar</th> <!-- Columna adicional para los botones de descarga -->
                 </tr>
             </thead>
             <tbody>
@@ -39,11 +43,6 @@
                         <td>{{ orden.id }}</td>
                         <td>{{ orden.cliente.cliente_profile.nombre_supermercado }}</td>
                         <td>{{ orden.transportista.get_full_name }}</td>
-                        <td>
-                            <!-- Botones para descargar PDF y Excel -->
-                            <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i>  PDF</a>
-                            <a href="#" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Excel</a>
-                        </td>
                     </tr>
                 {% empty %}
                     <tr>
@@ -95,4 +94,5 @@
         </ul>
     </nav>
     {% endif %}
+
 {% endblock %}
