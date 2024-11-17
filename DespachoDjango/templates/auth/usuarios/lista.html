@@ -6,11 +6,11 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>{{ title }}</h2>
         {% if user_type == 'clients' %}
-            <a href="{% url 'users:create_client' %}" class="btn btn-primary">
+            <a href="{% url 'users:create_client' %}" class="btn btn-success">
                 <i class="fas fa-plus me-2"></i>Nuevo Cliente
             </a>
         {% elif user_type == 'employees' %}
-            <a href="{% url 'users:create_employee' %}" class="btn btn-primary">
+            <a href="{% url 'users:create_employee' %}" class="btn btn-success">
                 <i class="fas fa-plus me-2"></i>Nuevo Empleado
             </a>
         {% endif %}
