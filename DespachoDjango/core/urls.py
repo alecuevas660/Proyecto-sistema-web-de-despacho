@@ -7,7 +7,8 @@ from django.contrib.auth import views as auth_views
 from apps.users.views import logout_view
 
 from apps.home.views import HomeView
-from . import views
+#from .import views
+
 
 
 urlpatterns = [
@@ -44,5 +45,5 @@ urlpatterns = [
     path('accounts/', include(('apps.users.urls', 'users'), namespace='users')),
     path("__reload__/", include("django_browser_reload.urls")),
 
-    path('reportes/', views.reporte_view, name='reportes'),
+   # path('reportes/', views.reporte_view, name='reportes'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
