@@ -1,13 +1,13 @@
 from decimal import Decimal
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404,redirect, render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.db import models
 from django.db.models import Q, F,OuterRef,Subquery
-from .models import Product, StockVariable, Categoria, OrdenDespacho, SeguimientoEnvio
+from .models import Product, StockVariable, Categoria, OrdenDespacho, SeguimientoEnvio, DetalleCompra
 from django.contrib import messages
-from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm, OrdenDespachoForm
+from .forms import SeleccionProductoOrdenForm,ProductForm, StockUpdateForm, ReporteInventarioForm, OrdenDespachoForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
@@ -25,8 +25,6 @@ from openpyxl.styles import Font
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
-# Create your views here.
 
 class InventarioListView(ListView):
     model = Product
@@ -473,3 +471,46 @@ def exportar_inventario(request):
 
     wb.save(response)
     return response
+
+def cambiar_estado_envio(request, seguimiento_id):
+    """Vista para cambiar el estado de un envío."""
+    if request.method == "POST":
+        seguimiento = get_object_or_404(SeguimientoEnvio, id=seguimiento_id)
+        nuevo_estado = request.POST.get("nuevo_estado")
+        comentarios = request.POST.get("comentarios", "")
+
+        try:
+            seguimiento.cambiar_estado(nuevo_estado, comentarios)
+            return JsonResponse({"success": True, "message": "Estado cambiado con éxito."})
+        except ValueError as e:
+            return JsonResponse({"success": False, "message": str(e)})
+    return JsonResponse({"success": False, "message": "Método no permitido."})
+
+def seleccionar_productos_orden(request):
+    if request.method == 'POST':
+        form = SeleccionProductoOrdenForm(request.POST)
+        if form.is_valid():
+            productos_seleccionados = form.cleaned_data['productos']
+            # Crear una nueva orden de despacho
+            orden = OrdenDespacho(cliente=request.user)  # Puedes agregar más campos si es necesario
+            orden.save()
+
+            # Agregar los productos a la orden y validar stock
+            for producto in productos_seleccionados:
+                detalle = DetalleCompra(productos=producto, cantidad_productos=1, precio_unitario=producto.precio_unitario)
+                try:
+                    detalle.clean()  # Validar si hay suficiente stock
+                    detalle.save()
+                    orden.compras.add(detalle)
+                except ValidationError as e:
+                    form.add_error(None, f"Error con el producto {producto.name}: {e.message}")
+            return redirect('confirmacion_orden', orden_id=orden.id)
+    else:
+        form = SeleccionProductoOrdenForm()
+
+    return render(request, 'seleccionar_productos_orden.html', {'form': form})
+
+def confirmar_orden(request, orden_id):
+    orden = OrdenDespacho.objects.get(id=orden_id)
+    total = sum(detalle.total for detalle in orden.compras.all())  # Calculamos el total de la orden
+    return render(request, 'confirmar_orden.html', {'orden': orden, 'total': total})
