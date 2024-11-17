@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Seguimiento</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+   <link rel="stylesheet" href="../static/css/seguimiento.css">
+</head>
+<body>
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Mapa de Seguimiento</h2>
+        <div class="d-flex align-items-center">
+            <select class="form-control mr-2">
+                <option>Este Mes</option>
+                <option>Últimos 3 Meses</option>
+                <option>Últimos 6 Meses</option>
+            </select>
+            <button class="btn btn-outline-secondary" onclick="refreshMap()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <div class="map-button" onclick="centerMap(pointA)">
+            <img src="https://img.icons8.com/ios/24/000000/warehouse.png" alt="Punto de Despacho"/> 
+            Centrar en Punto de Despacho
+        </div>
+        <div class="map-button" onclick="centerMap(pointB)">
+            <img src="https://img.icons8.com/ios/24/000000/map-marker.png" alt="Destino"/> 
+            Centrar en Destino
+        </div>
+        <div class="map-button" onclick="centerMap(truckLocation)">
+            <img src="https://img.icons8.com/ios/24/000000/truck.png" alt="Camión"/> 
+            Centrar en Camión
+        </div>
+    </div>
+
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // Inicialización del mapa centrado en Concepción, Chile
+    var map = L.map('map').setView([-36.8269, -73.0498], 13); // Coordenadas de Concepción
+
+    // Capa base del mapa
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Definir puntos de la ruta
+    var pointA = [-33.45247322499684, -70.69187866041474]; // Punto A (Punto de Despacho)
+    var pointB = [-36.82862087590831, -73.05982274183926]; // Punto B (Destino)
+
+    // Agregar marcador en el Punto A (Punto de Despacho)
+    var markerA = L.marker(pointA).addTo(map)
+        .bindPopup('<b>Punto de Despacho</b><br>Ubicación en Santiago, Chile.')
+        .openPopup();
+
+    // Agregar marcador en el Punto B (Destino)
+    var markerB = L.marker(pointB).addTo(map)
+        .bindPopup('<b>Destino</b><br>Ubicación de entrega.')
+        .openPopup();
+
+    // Ubicación del camión de entrega
+    var truckLocation = [-36.8275, -73.0540]; // Ubicación simulada del camión
+
+    // Icono personalizado para el camión en negro
+    var truckIcon = L.icon({
+        iconUrl: 'https://img.icons8.com/ios/50/000000/truck.png', // URL de la imagen del camión negro sólido
+        iconSize: [30, 30], // Tamaño del icono
+        iconAnchor: [15, 30], // Punto del icono que se alinea con la ubicación del marcador
+        popupAnchor: [0, -30] // Punto en el que se abre el popup en relación al icono
+    });
+
+    // Marcador para el camión de entrega
+    var truckMarker = L.marker(truckLocation, { icon: truckIcon }).addTo(map)
+        .bindPopup('<b>Camión de Entrega</b><br>Ubicación actual del camión.')
+        .openPopup();
+
+    // Dibujar la ruta
+    var route = L.polyline([pointA, pointB], { color: 'blue', weight: 5 }).addTo(map);
+
+    // Función para centrar el mapa en una ubicación específica
+    function centerMap(location) {
+        map.setView(location, 13); // Cambia el nivel de zoom si es necesario
+    }
+
+    // Función para actualizar el mapa
+    function refreshMap() {
+        alert('Mapa actualizado');
+        // Aquí puedes agregar lógica para actualizar la ruta, si es necesario
+    }
+</script>
+</body>
+</html>

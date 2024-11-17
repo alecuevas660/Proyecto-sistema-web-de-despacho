@@ -36,6 +36,7 @@ ENV/
 .vscode/
 *.swp
 *.swo
+.cursorrules
 
 # Environment variables
 .env
