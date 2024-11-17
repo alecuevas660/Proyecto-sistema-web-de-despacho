@@ -160,6 +160,10 @@ class DetalleCompra(models.Model):
 
     def __str__(self):
         return f"Compra de {self.cantidad_productos} {self.producto.name}"
+    
+    def clean(self):
+        if self.producto.stock_minimo < self.cantidad_productos:
+            raise ValidationError(f"No hay suficiente stock para el producto {self.producto.name}.")
 
     @property
     def total(self):

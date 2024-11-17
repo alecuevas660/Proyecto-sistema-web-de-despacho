@@ -406,11 +406,15 @@ def seleccionar_productos_orden(request):
             orden = OrdenDespacho(cliente=request.user)  # Puedes agregar más campos si es necesario
             orden.save()
 
-            # Asociar los productos seleccionados a la orden
+            # Agregar los productos a la orden y validar stock
             for producto in productos_seleccionados:
                 detalle = DetalleCompra(productos=producto, cantidad_productos=1, precio_unitario=producto.precio_unitario)
-                detalle.save()
-                orden.compras.add(detalle)  # Asociamos el detalle de compra a la orden
+                try:
+                    detalle.clean()  # Validar si hay suficiente stock
+                    detalle.save()
+                    orden.compras.add(detalle)
+                except ValidationError as e:
+                    form.add_error(None, f"Error con el producto {producto.name}: {e.message}")
             return redirect('confirmacion_orden', orden_id=orden.id)
     else:
         form = SeleccionProductoOrdenForm()
