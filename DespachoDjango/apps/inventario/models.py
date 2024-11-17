@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator, MinLengthValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 
+
 class EstadoEnvio:
     """Opciones para el estado de envío"""
     PENDIENTE = 'pendiente'
@@ -18,6 +19,7 @@ class EstadoEnvio:
         (ENTREGADO, 'Entregado'),
         (CANCELADO, 'Cancelado'),
     ]
+
 
 class Categoria(models.Model):
     """Modelo que representa una categoría de producto."""
@@ -37,13 +39,15 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
+
 class Product(models.Model):
     """Modelo que representa un producto en el sistema."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
         'Nombre',
         max_length=255,
-        validators=[MinLengthValidator(3, 'El nombre debe tener al menos 3 caracteres')]
+        validators=[MinLengthValidator(
+            3, 'El nombre debe tener al menos 3 caracteres')]
     )
     categoria = models.ForeignKey(
         Categoria,
@@ -90,16 +94,17 @@ class Product(models.Model):
         """Validaciones personalizadas del modelo"""
         if self.price and self.price <= 0:
             raise ValidationError({'price': 'El precio debe ser mayor que 0'})
-        
+
         if self.stock_minimo and self.stock_minimo < 0:
-            raise ValidationError({'stock_minimo': 'El stock mínimo no puede ser negativo'})
-        
+            raise ValidationError(
+                {'stock_minimo': 'El stock mínimo no puede ser negativo'})
+
         if self.name and self.categoria:
             exists = Product.objects.filter(
                 name__iexact=self.name,
                 categoria=self.categoria
             ).exclude(pk=self.pk).exists()
-            
+
             if exists:
                 raise ValidationError({
                     'name': 'Ya existe un producto con este nombre en la misma categoría'
@@ -110,6 +115,7 @@ class Product(models.Model):
             self.name = self.name.strip()
         self.full_clean()
         super().save(*args, **kwargs)
+
 
 class StockVariable(models.Model):
     """Modelo que representa el historial de stock de un producto."""
@@ -122,9 +128,10 @@ class StockVariable(models.Model):
         verbose_name='Producto'
     )
     cantidad_stock = models.PositiveIntegerField('Cantidad en Stock')
-    fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
-    motivo = models.CharField('Motivo de Actualización', max_length=255, blank=True)
-
+    fecha_actualizacion = models.DateTimeField(
+        'Fecha de Actualización', auto_now=True)
+    motivo = models.CharField(
+        'Motivo de Actualización', max_length=255, blank=True)
 
     class Meta:
         db_table = 'stock_variable'
@@ -134,6 +141,7 @@ class StockVariable(models.Model):
 
     def __str__(self):
         return f"{self.producto.name} - Stock: {self.cantidad_stock}"
+
 
 class DetalleCompra(models.Model):
     """Modelo que representa los detalles de una compra."""
@@ -167,6 +175,7 @@ class DetalleCompra(models.Model):
         """Calcula el total de la compra"""
         return self.cantidad_productos * self.precio_unitario
 
+
 class OrdenDespacho(models.Model):
     """Modelo que representa una orden de despacho."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -191,7 +200,8 @@ class OrdenDespacho(models.Model):
         verbose_name='Compra'
     )
     direccion_entrega = models.TextField('Dirección de Entrega')
-    fecha_creacion = models.DateTimeField('Fecha de Creación', auto_now_add=True)
+    fecha_creacion = models.DateTimeField(
+        'Fecha de Creación', auto_now_add=True)
     observaciones = models.TextField('Observaciones', blank=True)
 
     class Meta:
@@ -201,7 +211,8 @@ class OrdenDespacho(models.Model):
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f"Orden #{self.id} - Cliente: {self.cliente.get_full_name()}"
+        return f"Orden #{self.id} - Cliente: {self.cliente.get_full_name()}- Transportista: {self.transportista.get_full_name()}"
+
 
 class SeguimientoEnvio(models.Model):
     """Modelo que representa el seguimiento de un envío."""
@@ -218,9 +229,11 @@ class SeguimientoEnvio(models.Model):
         choices=EstadoEnvio.CHOICES,
         default=EstadoEnvio.PENDIENTE
     )
-    ubicacion_actual = models.CharField('Ubicación Actual', max_length=255, blank=True)
+    ubicacion_actual = models.CharField(
+        'Ubicación Actual', max_length=255, blank=True)
     comentarios = models.TextField('Comentarios', blank=True)
-    fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
+    fecha_actualizacion = models.DateTimeField(
+        'Fecha de Actualización', auto_now=True)
 
     class Meta:
         db_table = 'seguimiento_envio'
@@ -231,15 +244,38 @@ class SeguimientoEnvio(models.Model):
     def __str__(self):
         return f"Seguimiento de Orden #{self.orden.id} - {self.get_estado_envio_display()}"
 
+
+class Envio(models.Model):
+    descripcion = models.CharField(max_length=255)
+    fecha_envio = models.DateField()
+    estado = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.descripcion
+
+
+class EstadoEnvio(models.Model):
+    envio = models.ForeignKey('Envio', on_delete=models.CASCADE)
+    estado = models.CharField(max_length=50)
+    descripcion = models.TextField()
+    fecha_actualizacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.envio} - {self.estado}"
+
+
 class ReporteEnvios(models.Model):
     """Modelo que representa un reporte de envíos."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fecha_inicio = models.DateField('Fecha Inicial')
     fecha_fin = models.DateField('Fecha Final')
     total_envios = models.PositiveIntegerField('Total de Envíos', default=0)
-    envios_completados = models.PositiveIntegerField('Envíos Completados', default=0)
-    envios_pendientes = models.PositiveIntegerField('Envíos Pendientes', default=0)
-    fecha_generacion = models.DateTimeField('Fecha de Generación', auto_now_add=True)
+    envios_completados = models.PositiveIntegerField(
+        'Envíos Completados', default=0)
+    envios_pendientes = models.PositiveIntegerField(
+        'Envíos Pendientes', default=0)
+    fecha_generacion = models.DateTimeField(
+        'Fecha de Generación', auto_now_add=True)
 
     class Meta:
         db_table = 'reporte_envios'
@@ -249,6 +285,7 @@ class ReporteEnvios(models.Model):
 
     def __str__(self):
         return f"Reporte de Envíos {self.fecha_inicio} - {self.fecha_fin}"
+
 
 class ReporteFinanciero(models.Model):
     """Modelo que representa un reporte financiero."""
@@ -262,7 +299,8 @@ class ReporteFinanciero(models.Model):
         default=0
     )
     total_envios = models.PositiveIntegerField('Total Envíos', default=0)
-    fecha_generacion = models.DateTimeField('Fecha de Generación', auto_now_add=True)
+    fecha_generacion = models.DateTimeField(
+        'Fecha de Generación', auto_now_add=True)
 
     class Meta:
         db_table = 'reporte_financiero'
