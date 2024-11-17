@@ -144,3 +144,11 @@ class ReporteInventarioForm(forms.Form):
         initial=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+
+class SeleccionProductoOrdenForm(forms.Form):
+    productos = forms.ModelMultipleChoiceField(
+        queryset=Product.objects.filter(activo=True),
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+        label="Selecciona los productos para la orden",
+    )

@@ -1,6 +1,7 @@
 from django.urls import path
 from django.views.generic import RedirectView
 from . import views
+from .views import *
 
 
 app_name = 'users'
@@ -10,9 +11,7 @@ urlpatterns = [
     path('', RedirectView.as_view(pattern_name='home:home'), name='users_home'),
 
     # Clientes
-    path('clients/', views.UserListView.as_view(
-        extra_context={'user_type': 'clients', 'title': 'Clientes'}
-    ), name='client_list'),
+    path('clients/', UsersListView.as_view(), {'user_type': 'clients'}, name='client_list'),
     path('clients/create/', views.UserCreateView.as_view(
         extra_context={'user_type': 'client', 'title': 'Nuevo Cliente'}
     ), name='create_client'),
@@ -20,9 +19,7 @@ urlpatterns = [
          views.verify_email, name='verify_email'),
 
     # Empleados
-    path('employees/', views.UserListView.as_view(
-        extra_context={'user_type': 'employees', 'title': 'Empleados'}
-    ), name='employee_list'),
+    path('employees/', UsersListView.as_view(), {'user_type': 'employees'}, name='employee_list'),
     path('employees/create/', views.UserCreateView.as_view(
         extra_context={'user_type': 'employee', 'title': 'Nuevo Empleado'}
     ), name='create_employee'),

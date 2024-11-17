@@ -34,4 +34,5 @@ urlpatterns = [
     #path('api/', include(router.urls)), #<-- Comente esta seccion porque la API no la estamos usando y no es necesaria para el proyecto -->
     path('exportar/', views.exportar_inventario, name='exportar_inventario'),
     path('configurar-reporte/', views.configurar_reporte, name='configurar_reporte'),
+    #path('envios/<uuid:seguimiento_id>/cambiar_estado/', views.cambiar_estado_envio, name='cambiar_estado_envio'), #<-- Comente esta seccion porque cuando hice la url no esta realizada la seccion de los envios -->
 ]
