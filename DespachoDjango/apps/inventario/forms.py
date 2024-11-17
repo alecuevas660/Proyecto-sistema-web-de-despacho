@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Product, Categoria, StockVariable
+from .models import Product, Categoria, StockVariable, OrdenDespacho
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -144,3 +144,16 @@ class ReporteInventarioForm(forms.Form):
         initial=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+
+class OrdenDespachoForm(forms.ModelForm):
+    class Meta:
+        model = OrdenDespacho
+        fields = ['cliente', 'transportista', 'compra', 'direccion_entrega', 'observaciones']
+        widgets = {
+            'direccion_entrega': forms.Textarea(attrs={'rows': 3}),
+            'observaciones': forms.Textarea(attrs={'rows': 3}),
+        }
+        labels = {
+            'direccion_entrega': 'Dirección de Entrega',
+            'observaciones': 'Observaciones',
+        }

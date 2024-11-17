@@ -1,13 +1,13 @@
 from decimal import Decimal
 from django.shortcuts import redirect, render
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.db import models
-from django.db.models import Q, F
-from .models import Product, StockVariable, Categoria
+from django.db.models import Q, F,OuterRef,Subquery
+from .models import Product, StockVariable, Categoria, OrdenDespacho, SeguimientoEnvio
 from django.contrib import messages
-from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm
+from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm, OrdenDespachoForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
@@ -21,6 +21,10 @@ from io import BytesIO
 from django.template.loader import render_to_string
 from openpyxl import Workbook
 from openpyxl.styles import Font
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Create your views here.
 
@@ -244,6 +248,94 @@ class CategoriaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
     def form_valid(self, form):
         messages.success(self.request, 'Categoría actualizada exitosamente.')
         return super().form_valid(form)
+    
+class OrdenDespachoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = OrdenDespacho
+    template_name = 'ordenesdespachos/listadedespacho.html'
+    context_object_name = 'ordenes'
+    permission_required = 'app.view_ordendespacho'
+    paginate_by = 10  
+
+    def get_queryset(self):
+        subquery = SeguimientoEnvio.objects.filter(
+            orden_id=OuterRef('id')
+        ).order_by('-fecha_actualizacion').values('estado_envio')[:1]
+
+        queryset = super().get_queryset().select_related('cliente', 'transportista', 'compra')
+        return queryset.annotate(estado_envio_reciente=Subquery(subquery))
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'No tienes permiso para ver esta página.')
+        return super().handle_no_permission()
+
+
+
+class CrearOrdenDespachoView(CreateView):
+    model = OrdenDespacho
+    form_class = OrdenDespachoForm
+    template_name = 'ordenesdespachos/despacho_form.html'
+    success_url = reverse_lazy('inventario:listado_despacho')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        orden_despacho = form.instance
+        orden_despacho = OrdenDespacho.objects.select_related('cliente', 'transportista').get(id=orden_despacho.id)
+
+        transportista_email = orden_despacho.transportista.email
+        cliente_email = orden_despacho.cliente.email
+
+        sender = 'test.dummy4520@gmail.com'
+        password = 'uyvr oron kbwu mtqz'
+
+        subject = f"Orden de Despacho #{orden_despacho.id} - Detalles del Envío"
+        body = f"""
+        Hola {orden_despacho.transportista.get_full_name()}, 
+
+        Se ha generado una nueva orden de despacho. Aquí están los detalles:
+
+        Cliente: {orden_despacho.cliente.get_full_name()}
+        Dirección de Envío: {orden_despacho.direccion_entrega}
+        Fecha de Envío: {orden_despacho.tiempo_salida_aprox}
+
+        ¡Gracias por tu colaboración!
+        """
+
+        self.enviar_correo(sender, password, transportista_email, subject, body)
+
+        body_cliente = f"""
+        Hola {orden_despacho.cliente.get_full_name()}, 
+
+        Tu orden de despacho #{orden_despacho.id} ha sido registrada. Aquí están los detalles:
+
+        Transportista: {orden_despacho.transportista.get_full_name()}
+        Dirección de Envío: {orden_despacho.direccion_entrega}
+        Fecha Estimada de Envío: {orden_despacho.tiempo_salida_aprox}
+
+        ¡Gracias por elegirnos!
+        """
+
+        self.enviar_correo(sender, password, cliente_email, subject, body_cliente)
+
+        return response
+
+    def enviar_correo(self, sender, password, receiver, subject, body):
+        """Función para enviar el correo utilizando SMTP"""
+        msg = MIMEMultipart()
+        msg['From'] = sender
+        msg['To'] = receiver
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        try:
+            with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                server.starttls()
+                server.login(sender, password)
+                server.sendmail(sender, receiver, msg.as_string())
+                print(f"Correo enviado exitosamente a {receiver}.")
+        except Exception as e:
+            print(f"Ocurrió un error al enviar el correo a {receiver}: {e}")
+
 
 class StockUpdateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = StockVariable

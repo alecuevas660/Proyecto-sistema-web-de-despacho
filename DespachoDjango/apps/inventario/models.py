@@ -4,7 +4,9 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-
+from datetime import timedelta
+import random
+from django.utils import timezone
 
 class EstadoEnvio:
     """Opciones para el estado de envío"""
@@ -203,7 +205,13 @@ class OrdenDespacho(models.Model):
     fecha_creacion = models.DateTimeField(
         'Fecha de Creación', auto_now_add=True)
     observaciones = models.TextField('Observaciones', blank=True)
+    tiempo_salida_aprox = models.DateTimeField('Tiempo Aproximado de Salida', blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        if not self.tiempo_salida_aprox:
+            self.tiempo_salida_aprox = timezone.now() + timedelta(days=random.randint(2, 3))
+        super().save(*args, **kwargs)
+        
     class Meta:
         db_table = 'orden_despacho'
         verbose_name = 'Orden de Despacho'

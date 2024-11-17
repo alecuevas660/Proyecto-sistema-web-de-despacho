@@ -72,7 +72,8 @@
                         <div class="collapse" id="ordenesSubmenu">
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'listado_despacho' %}active{% endif %}" 
+                                    href="{% url 'inventario:listado_despacho' %}">
                                         <i class="fas fa-list"></i> Lista de Órdenes
                                     </a>
                                 </li>
