@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.urls import reverse_lazy
 from django.db import models
 from django.db.models import Q, F
-from .models import OrdenDespacho, Product, SeguimientoEnvio, StockVariable, Categoria
+from .models import DetalleCompra, OrdenDespacho, Product, SeguimientoEnvio, StockVariable, Categoria
 from django.contrib import messages
 from .forms import ProductForm, SeleccionProductoOrdenForm, StockUpdateForm, ReporteInventarioForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
@@ -397,18 +397,22 @@ def cambiar_estado_envio(request, seguimiento_id):
             return JsonResponse({"success": False, "message": str(e)})
     return JsonResponse({"success": False, "message": "Método no permitido."})
 
-def seleccionar_productos_para_orden(request, orden_id):
-    orden = OrdenDespacho.objects.get(id=orden_id)  # Suponiendo que ya tienes una orden
+def seleccionar_productos_orden(request):
     if request.method == 'POST':
         form = SeleccionProductoOrdenForm(request.POST)
         if form.is_valid():
             productos_seleccionados = form.cleaned_data['productos']
-            # Agregar los productos seleccionados a la orden de despacho
+            # Crear una nueva orden de despacho
+            orden = OrdenDespacho(cliente=request.user)  # Puedes agregar más campos si es necesario
+            orden.save()
+
+            # Asociar los productos seleccionados a la orden
             for producto in productos_seleccionados:
-                # Lógica para agregar los productos a la orden de despacho
-                orden.productos.add(producto)  # Asumiendo que hay una relación ManyToMany
-            return redirect('ruta_a_confirmacion')
+                detalle = DetalleCompra(productos=producto, cantidad_productos=1, precio_unitario=producto.precio_unitario)
+                detalle.save()
+                orden.compras.add(detalle)  # Asociamos el detalle de compra a la orden
+            return redirect('confirmacion_orden', orden_id=orden.id)
     else:
         form = SeleccionProductoOrdenForm()
 
-    return render(request, 'nombre_template.html', {'form': form, 'orden': orden})
+    return render(request, 'seleccionar_productos_orden.html', {'form': form})

@@ -139,9 +139,8 @@ class DetalleCompra(models.Model):
     """Modelo que representa los detalles de una compra."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    producto = models.ForeignKey(
+    producto = models.ManyToManyField(
         Product,
-        on_delete=models.PROTECT,
         related_name='detalles_compra',
         verbose_name='Producto'
     )
@@ -184,9 +183,8 @@ class OrdenDespacho(models.Model):
         limit_choices_to={'role': 'transport'},
         verbose_name='Transportista'
     )
-    compra = models.ForeignKey(
+    compra = models.ManyToManyField(
         DetalleCompra,
-        on_delete=models.PROTECT,
         related_name='ordenes',
         verbose_name='Compra'
     )
