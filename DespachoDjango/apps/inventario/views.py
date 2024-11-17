@@ -416,3 +416,8 @@ def seleccionar_productos_orden(request):
         form = SeleccionProductoOrdenForm()
 
     return render(request, 'seleccionar_productos_orden.html', {'form': form})
+
+def confirmar_orden(request, orden_id):
+    orden = OrdenDespacho.objects.get(id=orden_id)
+    total = sum(detalle.total for detalle in orden.compras.all())  # Calculamos el total de la orden
+    return render(request, 'confirmar_orden.html', {'orden': orden, 'total': total})
