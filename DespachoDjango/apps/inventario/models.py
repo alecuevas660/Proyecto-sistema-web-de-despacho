@@ -274,6 +274,7 @@ class SeguimientoEnvio(models.Model):
 class Envio(models.Model):
     descripcion = models.CharField(max_length=255)
     fecha_envio = models.DateField()
+    fecha_entrega = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=100)
 
     def __str__(self):

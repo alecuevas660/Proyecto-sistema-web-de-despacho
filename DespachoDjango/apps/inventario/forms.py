@@ -1,11 +1,14 @@
+from .models import SeguimientoEnvio
 from django import forms
 from django.core.exceptions import ValidationError
 from .models import Product, Categoria, StockVariable, OrdenDespacho
 
+
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'categoria', 'description', 'price', 'stock_minimo', 'activo']
+        fields = ['name', 'categoria', 'description',
+                  'price', 'stock_minimo', 'activo']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -34,8 +37,9 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['categoria'].queryset = Categoria.objects.filter(activo=True)
-        
+        self.fields['categoria'].queryset = Categoria.objects.filter(
+            activo=True)
+
         # Agregar mensajes de ayuda
         self.fields['name'].help_text = 'El nombre debe ser único en la categoría seleccionada'
         self.fields['price'].help_text = 'Ingrese un precio mayor a 0'
@@ -44,12 +48,14 @@ class ProductForm(forms.ModelForm):
     def clean_name(self):
         name = self.cleaned_data.get('name', '').strip()
         if len(name) < 3:
-            raise ValidationError('El nombre debe tener al menos 3 caracteres.')
-        
+            raise ValidationError(
+                'El nombre debe tener al menos 3 caracteres.')
+
         # Validar caracteres especiales
         if not name.replace(' ', '').isalnum():
-            raise ValidationError('El nombre solo puede contener letras, números y espacios.')
-        
+            raise ValidationError(
+                'El nombre solo puede contener letras, números y espacios.')
+
         return name
 
     def clean_price(self):
@@ -69,7 +75,8 @@ class ProductForm(forms.ModelForm):
         if stock_minimo < 0:
             raise ValidationError('El stock mínimo no puede ser negativo.')
         if stock_minimo > 9999:
-            raise ValidationError('El stock mínimo no puede ser mayor a 9,999.')
+            raise ValidationError(
+                'El stock mínimo no puede ser mayor a 9,999.')
         return stock_minimo
 
     def clean(self):
@@ -85,13 +92,14 @@ class ProductForm(forms.ModelForm):
             )
             if self.instance.pk:
                 exists = exists.exclude(pk=self.instance.pk)
-            
+
             if exists.exists():
                 raise ValidationError({
                     'name': f'Ya existe un producto llamado "{name}" en la categoría {categoria.nombre}.'
                 })
 
         return cleaned_data
+
 
 class StockUpdateForm(forms.ModelForm):
     class Meta:
@@ -108,6 +116,7 @@ class StockUpdateForm(forms.ModelForm):
             })
         }
 
+
 class ReporteInventarioForm(forms.Form):
     ORDEN_CHOICES = [
         ('nombre', 'Nombre'),
@@ -115,7 +124,7 @@ class ReporteInventarioForm(forms.Form):
         ('stock', 'Stock'),
         ('precio', 'Precio'),
     ]
-    
+
     fecha_inicio = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
@@ -145,6 +154,7 @@ class ReporteInventarioForm(forms.Form):
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
 
+
 class SeleccionProductoOrdenForm(forms.Form):
     productos = forms.ModelMultipleChoiceField(
         queryset=Product.objects.filter(activo=True),
@@ -153,10 +163,12 @@ class SeleccionProductoOrdenForm(forms.Form):
         label="Selecciona los productos para la orden",
     )
 
+
 class OrdenDespachoForm(forms.ModelForm):
     class Meta:
         model = OrdenDespacho
-        fields = ['cliente', 'transportista', 'compra', 'direccion_entrega', 'observaciones']
+        fields = ['cliente', 'transportista', 'compra',
+                  'direccion_entrega', 'observaciones']
         widgets = {
             'direccion_entrega': forms.Textarea(attrs={'rows': 3}),
             'observaciones': forms.Textarea(attrs={'rows': 3}),
@@ -164,4 +176,14 @@ class OrdenDespachoForm(forms.ModelForm):
         labels = {
             'direccion_entrega': 'Dirección de Entrega',
             'observaciones': 'Observaciones',
+        }
+
+
+class SeguimientoEnvioForm(forms.ModelForm):
+    """Formulario para el modelo SeguimientoEnvio"""
+    class Meta:
+        model = SeguimientoEnvio
+        fields = ['orden', 'estado_envio', 'ubicacion_actual', 'comentarios']
+        widgets = {
+            'comentarios': forms.Textarea(attrs={'rows': 4}),
         }
