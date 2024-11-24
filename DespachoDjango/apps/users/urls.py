@@ -38,4 +38,6 @@ urlpatterns = [
     path('employees/<uuid:pk>/detail/', views.UserDetailView.as_view(
         extra_context={'user_type': 'employee'}
     ), name='detail_employee'),
+
+    path('<str:user_type>/<uuid:pk>/', views.UserDetailView.as_view(), name='detail'),
 ]

@@ -143,51 +143,34 @@ class UserCreateView(BaseUserView, CreateView):
     template_name = 'auth/usuarios/form.html'
 
     def get_success_url(self):
-        user_type = self.kwargs.get(
-            'user_type') or self.extra_context.get('user_type')
+        # Corregir la URL para usar el nombre correcto según el tipo de usuario
+        user_type = self.kwargs.get('user_type') or self.extra_context.get('user_type')
         if user_type == 'client':
-            return reverse_lazy('users:client_list')
-        elif user_type == 'employee':
-            return reverse_lazy('users:employee_list')
-        return reverse_lazy('users:user_list')  # fallback
+            return reverse_lazy('users:detail_client', kwargs={'pk': self.object.pk})
+        else:
+            return reverse_lazy('users:detail_employee', kwargs={'pk': self.object.pk})
 
     def get_form_class(self):
-        user_type = self.kwargs.get(
-            'user_type') or self.extra_context.get('user_type')
+        user_type = self.kwargs.get('user_type') or self.extra_context.get('user_type')
         return ClienteForm if user_type == 'client' else EmployeeForm
 
     def form_valid(self, form):
         try:
             user = form.save(commit=False)
-            user_type = self.kwargs.get(
-                'user_type') or self.extra_context.get('user_type')
+            user_type = self.kwargs.get('user_type') or self.extra_context.get('user_type')
             user.role = 'client' if user_type == 'client' else 'employee'
-            user.is_active = False
-            user.verification_token = get_random_string(32)
-            user.save()  # Guardamos primero el usuario
-
-            """ Enviar el correo de verificacion """
-            current_site = get_current_site(self.request)
-            verification_url = reverse('users:verify_email', args=[
-                                       user.verification_token])
-            full_verification_url = f"http://{
-                current_site.domain}{verification_url}"
-
-            send_mail(
-                'Verificacion de correo electronico',
-                f'Hola {user.get_full_name()},\n\nPor favor, confirma tu correo electrónico haciendo clic en el siguiente enlace: {
-                    full_verification_url}',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
-            # Guardamos el formulario completo (esto creará el perfil)
-            form.save()
+            user.is_active = True
+            
+            # Guardar el usuario sin crear el perfil automáticamente
+            setattr(user, '_dont_setup_profile', True)
+            user.save()
+            
+            # Ahora guardamos el formulario completo que creará el perfil
+            self.object = form.save()
 
             messages.success(
                 self.request,
-                f'{"Cliente" if user_type == "client" else "Empleado"} {
-                    user.get_full_name()} creado exitosamente.'
+                f'{"Cliente" if user_type == "client" else "Empleado"} {user.get_full_name()} creado exitosamente.'
             )
             return super().form_valid(form)
         except Exception as e:
@@ -196,12 +179,11 @@ class UserCreateView(BaseUserView, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user_type = self.kwargs.get(
-            'user_type') or self.extra_context.get('user_type')
+        user_type = self.kwargs.get('user_type') or self.extra_context.get('user_type')
         context.update({
             'title': 'Crear Cliente' if user_type == 'client' else 'Crear Empleado',
             'is_update': False,
-            'user_type': user_type,  # Agregamos user_type al contexto
+            'user_type': user_type,
             'cancel_url': reverse_lazy(f'users:{"client" if user_type == "client" else "employee"}_list')
         })
         return context
