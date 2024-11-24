@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, ClienteProfile, TransportistaProfile, EmployeeProfile
+from .models import User, ClienteProfile, TransportistaProfile, EmployeeProfile, Departamento_empleado
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -37,8 +37,13 @@ class TransportistaProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'licencia', 'disponibilidad')
     list_filter = ('disponibilidad', 'licencia')
 
+@admin.register(Departamento_empleado)
+class DepartamentoEmpleadoAdmin(admin.ModelAdmin):
+    list_display = ('id_departamento', 'nombre')
+    search_fields = ('nombre',)
+
 @admin.register(EmployeeProfile)
 class EmployeeProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'departamento', 'cargo', 'fecha_contratacion')
-    search_fields = ('user__email', 'user__nombre', 'departamento', 'cargo')
+    search_fields = ('user__email', 'user__nombre', 'departamento__nombre', 'cargo')
     list_filter = ('departamento', 'cargo', 'fecha_contratacion')
