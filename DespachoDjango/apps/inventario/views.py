@@ -1,36 +1,71 @@
-from django.shortcuts import redirect, render
+from decimal import Decimal
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
-from django.db import models, transaction
-from django.db.models import Q, F
-from django.forms import inlineformset_factory, forms
-from .models import Product, StockVariable, Categoria, Despacho, DetalleDespacho, EstadoDespacho
+from django.db import models
+from django.db.models import Q, F, OuterRef, Subquery
+from .models import Product, StockVariable, Categoria, OrdenDespacho, SeguimientoEnvio, DetalleCompra
 from django.contrib import messages
-from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm
+from .forms import SeleccionProductoOrdenForm, ProductForm, StockUpdateForm, ReporteInventarioForm, OrdenDespachoForm
+from django.shortcuts import redirect, render, get_object_or_404
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.urls import reverse_lazy
+from django.db import models
+from django.db.models import Q, F
+from .models import Product, StockVariable, Categoria, SeguimientoEnvio, OrdenDespacho, Envio
+from django.contrib import messages
+from .forms import ProductForm, StockUpdateForm, ReporteInventarioForm, SeguimientoEnvioForm
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import ValidationError
+from django.utils.timezone import now
 from openpyxl import Workbook
 from datetime import datetime, timedelta
 from django.utils import timezone
-from apps.users.models import User
-from django import forms
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.template.loader import render_to_string
+from openpyxl import Workbook
+from openpyxl.styles import Font
 
-# Create your views here.
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-class InventarioListView(LoginRequiredMixin, ListView):
+
+class InventarioListView(ListView):
     model = Product
     template_name = 'inventario/inventario_list.html'
     context_object_name = 'productos'
+    paginate_by = 5
+
+    def get_queryset(self):
+        queryset = Product.objects.select_related('categoria').all()
+
+        # Filtro de categoría
+        categoria = self.request.GET.get('categoria')
+        if categoria:
+            queryset = queryset.filter(categoria=categoria)
+
+        # Búsqueda
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+
+        return queryset.distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         # Obtener todos los productos con su último stock
-        productos = Product.objects.all()
+        productos = self.get_queryset()  # Obtener los productos filtrados
         productos_atencion = []
         total_stock_bajo = 0
 
@@ -44,18 +79,21 @@ class InventarioListView(LoginRequiredMixin, ListView):
         context['productos_stock_bajo'] = productos_atencion
         context['total_productos'] = productos.count()
         context['total_stock_bajo'] = total_stock_bajo
-        
+        context['categorias'] = Categoria.objects.filter(
+            activo=True)  # Obtener categorías activas para el filtro
+
         return context
 
-class ProductListView(LoginRequiredMixin, ListView):
+
+class ProductListView(ListView):
     model = Product
     template_name = 'inventario/product_list.html'
     context_object_name = 'productos'
-    paginate_by = 10
+    paginate_by = 5
 
     def get_queryset(self):
         queryset = Product.objects.all()
-        
+
         # Filtro de categoría
         categoria = self.request.GET.get('categoria')
         if categoria:
@@ -97,6 +135,7 @@ class ProductListView(LoginRequiredMixin, ListView):
         })
         return context
 
+
 class ProductCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Product
     form_class = ProductForm
@@ -110,35 +149,39 @@ class ProductCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
                 if field == '__all__':
                     messages.error(self.request, error)
                 else:
-                    messages.error(self.request, f"{form[field].label}: {error}")
+                    messages.error(self.request, f"{
+                                   form[field].label}: {error}")
         return super().form_invalid(form)
 
     def form_valid(self, form):
         try:
             self.object = form.save(commit=False)
-            
+
             # Validaciones adicionales de negocio
             if self.object.price > 1000000:
-                messages.warning(self.request, 'Has establecido un precio muy alto. Por favor, verifica que sea correcto.')
-            
+                messages.warning(
+                    self.request, 'Has establecido un precio muy alto. Por favor, verifica que sea correcto.')
+
             if self.object.stock_minimo > 100:
-                messages.warning(self.request, 'Has establecido un stock mínimo alto. Esto podría generar muchas alertas.')
+                messages.warning(
+                    self.request, 'Has establecido un stock mínimo alto. Esto podría generar muchas alertas.')
 
             response = super().form_valid(form)
-            
+
             # Crear registro inicial de stock
             StockVariable.objects.create(
                 producto=self.object,
                 cantidad_stock=0,
                 motivo='Registro inicial'
             )
-            
+
             messages.success(
-                self.request, 
-                f'Producto "{self.object.name}" creado exitosamente en la categoría {self.object.categoria.nombre}.'
+                self.request,
+                f'Producto "{self.object.name}" creado exitosamente en la categoría {
+                    self.object.categoria.nombre}.'
             )
             return response
-            
+
         except ValidationError as e:
             for field, errors in e.message_dict.items():
                 for error in errors:
@@ -146,10 +189,11 @@ class ProductCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             return self.form_invalid(form)
         except Exception as e:
             messages.error(
-                self.request, 
+                self.request,
                 f'Error inesperado al crear el producto: {str(e)}'
             )
             return self.form_invalid(form)
+
 
 class ProductUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Product
@@ -162,6 +206,7 @@ class ProductUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         response = super().form_valid(form)
         messages.success(self.request, 'Producto actualizado exitosamente.')
         return response
+
 
 @method_decorator(require_POST, name='delete')
 class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
@@ -184,6 +229,7 @@ class ProductDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
                 return JsonResponse({'success': False}, status=400)
             return HttpResponseRedirect(success_url)
 
+
 class CategoriaListView(LoginRequiredMixin, ListView):
     model = Categoria
     template_name = 'inventario/category_list.html'
@@ -200,6 +246,7 @@ class CategoriaListView(LoginRequiredMixin, ListView):
             )
         return queryset
 
+
 class CategoriaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Categoria
     template_name = 'inventario/category_form.html'
@@ -211,6 +258,7 @@ class CategoriaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateVie
         messages.success(self.request, 'Categoría creada exitosamente.')
         return super().form_valid(form)
 
+
 class CategoriaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Categoria
     template_name = 'inventario/category_form.html'
@@ -221,6 +269,99 @@ class CategoriaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateVie
     def form_valid(self, form):
         messages.success(self.request, 'Categoría actualizada exitosamente.')
         return super().form_valid(form)
+
+
+class OrdenDespachoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = OrdenDespacho
+    template_name = 'ordenesdespachos/listadedespacho.html'
+    context_object_name = 'ordenes'
+    permission_required = 'app.view_ordendespacho'
+    paginate_by = 10
+
+    def get_queryset(self):
+        subquery = SeguimientoEnvio.objects.filter(
+            orden_id=OuterRef('id')
+        ).order_by('-fecha_actualizacion').values('estado_envio')[:1]
+
+        queryset = super().get_queryset().select_related(
+            'cliente', 'transportista', 'compra')
+        return queryset.annotate(estado_envio_reciente=Subquery(subquery))
+
+    def handle_no_permission(self):
+        messages.error(self.request, 'No tienes permiso para ver esta página.')
+        return super().handle_no_permission()
+
+
+class CrearOrdenDespachoView(CreateView):
+    model = OrdenDespacho
+    form_class = OrdenDespachoForm
+    template_name = 'ordenesdespachos/despacho_form.html'
+    success_url = reverse_lazy('inventario:listado_despacho')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        orden_despacho = form.instance
+        orden_despacho = OrdenDespacho.objects.select_related(
+            'cliente', 'transportista').get(id=orden_despacho.id)
+
+        transportista_email = orden_despacho.transportista.email
+        cliente_email = orden_despacho.cliente.email
+
+        sender = 'test.dummy4520@gmail.com'
+        password = 'uyvr oron kbwu mtqz'
+
+        subject = f"Orden de Despacho #{
+            orden_despacho.id} - Detalles del Envío"
+        body = f"""
+        Hola {orden_despacho.transportista.get_full_name()},
+
+        Se ha generado una nueva orden de despacho. Aquí están los detalles:
+
+        Cliente: {orden_despacho.cliente.get_full_name()}
+        Dirección de Envío: {orden_despacho.direccion_entrega}
+        Fecha de Envío: {orden_despacho.tiempo_salida_aprox}
+
+        ¡Gracias por tu colaboración!
+        """
+
+        self.enviar_correo(
+            sender, password, transportista_email, subject, body)
+
+        body_cliente = f"""
+        Hola {orden_despacho.cliente.get_full_name()},
+
+        #{orden_despacho.id} ha sido registrada. Aquí están los detalles:
+        Tu orden de despacho
+
+        Transportista: {orden_despacho.transportista.get_full_name()}
+        Dirección de Envío: {orden_despacho.direccion_entrega}
+        Fecha Estimada de Envío: {orden_despacho.tiempo_salida_aprox}
+
+        ¡Gracias por elegirnos!
+        """
+        self.enviar_correo(sender, password, cliente_email,
+                           subject, body_cliente)
+
+        return response
+
+    def enviar_correo(self, sender, password, receiver, subject, body):
+        """Función para enviar el correo utilizando SMTP"""
+        msg = MIMEMultipart()
+        msg['From'] = sender
+        msg['To'] = receiver
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        try:
+            with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                server.starttls()
+                server.login(sender, password)
+                server.sendmail(sender, receiver, msg.as_string())
+                print(f"Correo enviado exitosamente a {receiver}.")
+        except Exception as e:
+            print(f"Ocurrió un error al enviar el correo a {receiver}: {e}")
+
 
 class StockUpdateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = StockVariable
@@ -240,28 +381,32 @@ class StockUpdateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             form.instance.producto_id = self.kwargs['pk']
             producto = Product.objects.get(pk=self.kwargs['pk'])
             nueva_cantidad = form.cleaned_data['cantidad_stock']
-            
+
             # Validaciones de negocio para el stock
             if nueva_cantidad == 0:
-                messages.warning(self.request, 'Has establecido el stock en 0.')
-            
+                messages.warning(
+                    self.request, 'Has establecido el stock en 0.')
+
             if nueva_cantidad < producto.stock_minimo:
                 messages.warning(
-                    self.request, 
-                    f'El nuevo stock ({nueva_cantidad}) está por debajo del mínimo requerido ({producto.stock_minimo}).'
+                    self.request,
+                    f'El nuevo stock ({nueva_cantidad}) está por debajo del mínimo requerido ({
+                        producto.stock_minimo}).'
                 )
-            
+
             if not form.instance.motivo.strip():
-                form.add_error('motivo', 'Debe proporcionar un motivo para la actualización')
+                form.add_error(
+                    'motivo', 'Debe proporcionar un motivo para la actualización')
                 return self.form_invalid(form)
 
             response = super().form_valid(form)
             messages.success(
-                self.request, 
-                f'Stock actualizado exitosamente. Nuevo stock: {nueva_cantidad} unidades.'
+                self.request,
+                f'Stock actualizado exitosamente. Nuevo stock: {
+                    nueva_cantidad} unidades.'
             )
             return response
-            
+
         except ValidationError as e:
             messages.error(self.request, 'Error al actualizar el stock:')
             for error in e.messages:
@@ -272,7 +417,7 @@ class StockUpdateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             return redirect('inventario:inventario_list')
         except Exception as e:
             messages.error(
-                self.request, 
+                self.request,
                 f'Error inesperado al actualizar el stock: {str(e)}'
             )
             return self.form_invalid(form)
@@ -280,18 +425,67 @@ class StockUpdateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('inventario:inventario_list')
 
+
+class SeguimientoEnvioListView(ListView):
+    """Vista para listar los seguimientos de envíos."""
+    model = SeguimientoEnvio
+    template_name = 'inventario/envio.html'
+    context_object_name = 'seguimientos'
+    paginate_by = 10
+
+
+class SeguimientoEnvioCreateView(CreateView):
+    """Vista para crear un nuevo seguimiento de envío."""
+    model = SeguimientoEnvio
+    form_class = SeguimientoEnvioForm
+    template_name = 'inventario/create.html'
+    success_url = reverse_lazy('inventario:seguimiento_list')
+
+    def get_initial(self):
+        """Formulario con la orden seleccionada (si se pasa por URL)."""
+        orden_id = self.kwargs.get('orden_id')
+        if orden_id:
+            orden = get_object_or_404(OrdenDespacho, id=orden_id)
+            return {'orden': orden}
+        return super().get_initial()
+
+
+class SeguimientoEnvioUpdateView(UpdateView):
+    """Vista para actualizar un seguimiento existente."""
+    model = SeguimientoEnvio
+    form_class = SeguimientoEnvioForm
+    template_name = 'inventario/update.html'
+    success_url = reverse_lazy('inventario:seguimiento_list')
+
+
+def envios_activos(request):
+    """ Filtrar envios que estan activos """
+    envios = Envio.objects.filter(
+        estado__in=['en progreso', 'pendiente'], fecha_envio__gte=now())
+    context = {'envios_activos': envios}
+    return render(request, 'envio_activos.html', context)
+
+
+def historial(request):
+    """ Filtrar envios completados o cancelados"""
+    envios = Envio.objects.filter(estado__in=['completado', 'cancelado'])
+    context = {'historial_envios': envios}
+    return render(request, 'historial.html', context)
+
+
 def configurar_reporte(request):
     form = ReporteInventarioForm()
     return render(request, 'inventario/reporte_form.html', {'form': form})
 
+
 def exportar_inventario(request):
     if request.method == 'GET':
         return configurar_reporte(request)
-        
+
     form = ReporteInventarioForm(request.POST)
     if not form.is_valid():
         return render(request, 'inventario/reporte_form.html', {'form': form})
-        
+
     # Obtener parámetros del formulario
     fecha_inicio = form.cleaned_data.get('fecha_inicio')
     fecha_fin = form.cleaned_data.get('fecha_fin')
@@ -304,29 +498,32 @@ def exportar_inventario(request):
     wb = Workbook()
     ws_resumen = wb.active
     ws_resumen.title = "Resumen General"
-    
+
     # Agregar parámetros del reporte
     ws_resumen.append(['REPORTE DE INVENTARIO'])
-    ws_resumen.append(['Fecha de generación:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
+    ws_resumen.append(
+        ['Fecha de generación:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
     ws_resumen.append(['Parámetros del reporte:'])
     ws_resumen.append(['Fecha inicio:', fecha_inicio or 'No especificada'])
     ws_resumen.append(['Fecha fin:', fecha_fin or 'No especificada'])
-    ws_resumen.append(['Categorías:', ', '.join(c.nombre for c in categorias) if categorias else 'Todas'])
-    ws_resumen.append(['Umbral stock bajo:', umbral_stock_bajo or 'Predeterminado'])
+    ws_resumen.append(['Categorías:', ', '.join(
+        c.nombre for c in categorias) if categorias else 'Todas'])
+    ws_resumen.append(
+        ['Umbral stock bajo:', umbral_stock_bajo or 'Predeterminado'])
     ws_resumen.append([])
 
     # Filtrar productos según parámetros
     productos = Product.objects.all()
-    
+
     if not incluir_inactivos:
         productos = productos.filter(activo=True)
-    
+
     if categorias:
         productos = productos.filter(categoria__in=categorias)
-        
+
     if fecha_inicio:
         productos = productos.filter(updated_at__gte=fecha_inicio)
-        
+
     if fecha_fin:
         productos = productos.filter(updated_at__lte=fecha_fin)
 
@@ -341,12 +538,14 @@ def exportar_inventario(request):
         productos = productos.order_by('price')
 
     # ... (resto del código del reporte como estaba antes)
-    
+
     # Modificar la lógica de stock bajo para usar el umbral personalizado
     if umbral_stock_bajo is not None:
-        productos_stock_bajo = sum(1 for p in productos if p.get_stock_actual() < umbral_stock_bajo)
+        productos_stock_bajo = sum(
+            1 for p in productos if p.get_stock_actual() < umbral_stock_bajo)
     else:
-        productos_stock_bajo = sum(1 for p in productos if p.get_stock_actual() < p.stock_minimo)
+        productos_stock_bajo = sum(
+            1 for p in productos if p.get_stock_actual() < p.stock_minimo)
 
     # ... (continuar con el resto del código del reporte)
 
@@ -360,140 +559,52 @@ def exportar_inventario(request):
     wb.save(response)
     return response
 
-class DespachoListView(LoginRequiredMixin, ListView):
-    model = Despacho
-    template_name = 'inventario/despacho_list.html'
-    context_object_name = 'despachos'
-    paginate_by = 10
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if self.request.user.role == 'client':
-            queryset = queryset.filter(cliente=self.request.user)
-        
-        # Búsqueda
-        search = self.request.GET.get('search')
-        if search:
-            queryset = queryset.filter(numero_despacho__icontains=search)
-        
-        return queryset.select_related('cliente')
+def cambiar_estado_envio(request, seguimiento_id):
+    """Vista para cambiar el estado de un envío."""
+    if request.method == "POST":
+        seguimiento = get_object_or_404(SeguimientoEnvio, id=seguimiento_id)
+        nuevo_estado = request.POST.get("nuevo_estado")
+        comentarios = request.POST.get("comentarios", "")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['estados'] = EstadoDespacho.CHOICES
-        return context
-
-# Crear el FormSet para DetalleDespacho
-DetalleDespachoFormSet = inlineformset_factory(
-    Despacho,
-    DetalleDespacho,
-    fields=['producto', 'cantidad', 'precio_unitario'],
-    extra=1,
-    can_delete=True,
-    min_num=1,
-    validate_min=True,
-    widgets={
-        'producto': forms.Select(attrs={
-            'class': 'form-control select2',
-            'required': 'required'
-        }),
-        'cantidad': forms.NumberInput(attrs={
-            'class': 'form-control',
-            'min': '1',
-            'required': 'required'
-        }),
-        'precio_unitario': forms.NumberInput(attrs={
-            'class': 'form-control',
-            'readonly': 'readonly'
-        })
-    }
-)
-
-class DespachoCreateView(LoginRequiredMixin, CreateView):
-    model = Despacho
-    fields = ['direccion_entrega', 'observaciones']
-    template_name = 'inventario/despacho_form.html'
-    success_url = reverse_lazy('inventario:despacho_list')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['clientes'] = User.objects.filter(is_active=True)
-        context['productos'] = Product.objects.filter(activo=True)
-        context['estados'] = EstadoDespacho.CHOICES
-        if self.request.POST:
-            context['detalles'] = DetalleDespachoFormSet(
-                self.request.POST,
-                instance=self.object if self.object else None
-            )
-        else:
-            context['detalles'] = DetalleDespachoFormSet(
-                instance=self.object if self.object else None
-            )
-        return context
-
-    def form_valid(self, form):
-        context = self.get_context_data()
-        detalles_formset = context['detalles']
-        
         try:
-            with transaction.atomic():
-                # Primero guardamos el despacho
-                self.object = form.save(commit=False)
-                self.object.cliente = self.request.user
-                self.object.save()
+            seguimiento.cambiar_estado(nuevo_estado, comentarios)
+            return JsonResponse({"success": True, "message": "Estado cambiado con éxito."})
+        except ValueError as e:
+            return JsonResponse({"success": False, "message": str(e)})
+    return JsonResponse({"success": False, "message": "Método no permitido."})
 
-                # Ahora guardamos los detalles
-                if detalles_formset.is_valid():
-                    detalles = detalles_formset.save(commit=False)
-                    for detalle in detalles:
-                        detalle.despacho = self.object  # Asignamos el despacho al detalle
-                        if not detalle.precio_unitario and detalle.producto:
-                            detalle.precio_unitario = detalle.producto.price
-                        detalle.save()
-                    
-                    # Eliminamos los detalles marcados para eliminar
-                    for detalle in detalles_formset.deleted_objects:
-                        detalle.delete()
-                    
-                    # Actualizamos el total
-                    self.object.actualizar_total()
-                else:
-                    raise ValidationError('Error en los detalles del despacho')
 
-                messages.success(self.request, 'Despacho creado exitosamente')
-                return HttpResponseRedirect(self.get_success_url())
-        except ValidationError as e:
-            messages.error(self.request, str(e))
-            return self.form_invalid(form)
-        except Exception as e:
-            messages.error(self.request, f'Error al crear el despacho: {str(e)}')
-            return self.form_invalid(form)
+def seleccionar_productos_orden(request):
+    if request.method == 'POST':
+        form = SeleccionProductoOrdenForm(request.POST)
+        if form.is_valid():
+            productos_seleccionados = form.cleaned_data['productos']
+            # Crear una nueva orden de despacho
+            # Puedes agregar más campos si es necesario
+            orden = OrdenDespacho(cliente=request.user)
+            orden.save()
 
-    def form_invalid(self, form):
-        messages.error(self.request, 'Por favor corrija los errores en el formulario')
-        return super().form_invalid(form)
+            # Agregar los productos a la orden y validar stock
+            for producto in productos_seleccionados:
+                detalle = DetalleCompra(
+                    productos=producto, cantidad_productos=1, precio_unitario=producto.precio_unitario)
+                try:
+                    detalle.clean()  # Validar si hay suficiente stock
+                    detalle.save()
+                    orden.compras.add(detalle)
+                except ValidationError as e:
+                    form.add_error(None, f"Error con el producto {
+                                   producto.name}: {e.message}")
+            return redirect('confirmacion_orden', orden_id=orden.id)
+    else:
+        form = SeleccionProductoOrdenForm()
 
-class DespachoDetailView(LoginRequiredMixin, DetailView):
-    model = Despacho
-    template_name = 'inventario/despacho_detail.html'
-    context_object_name = 'despacho'
+    return render(request, 'seleccionar_productos_orden.html', {'form': form})
 
-class DespachoUpdateView(LoginRequiredMixin, UpdateView):
-    model = Despacho
-    fields = ['direccion_entrega', 'observaciones', 'estado']
-    template_name = 'inventario/despacho_form.html'
-    success_url = reverse_lazy('inventario:despacho_list')
 
-    def form_valid(self, form):
-        messages.success(self.request, 'Despacho actualizado exitosamente')
-        return super().form_valid(form)
-
-class DespachoEstadoUpdateView(LoginRequiredMixin, UpdateView):
-    model = Despacho
-    fields = ['estado']
-    template_name = 'inventario/despacho_estado_form.html'
-    success_url = reverse_lazy('inventario:despacho_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Estado actualizado exitosamente')
-        return super().form_valid(form)
+def confirmar_orden(request, orden_id):
+    orden = OrdenDespacho.objects.get(id=orden_id)
+    # Calculamos el total de la orden
+    total = sum(detalle.total for detalle in orden.compras.all())
+    return render(request, 'confirmar_orden.html', {'orden': orden, 'total': total})

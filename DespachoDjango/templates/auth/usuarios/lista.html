@@ -1,0 +1,136 @@
+{% extends 'auth/usuarios/base_usuarios.html' %}
+{% load static %}
+
+{% block usuario_content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        {% if user_type == 'clients' %}
+            <a href="{% url 'users:create_client' %}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>Nuevo Cliente
+            </a>
+        {% elif user_type == 'employees' %}
+            <a href="{% url 'users:create_employee' %}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>Nuevo Empleado
+            </a>
+        {% endif %}
+    </div>
+
+    <form method="GET" class="mb-3 d-flex">
+        <input type="text" name="search" class="form-control me-2" placeholder="Buscar..." value="{{ search_query }}">
+    
+        <select name="filter" class="form-select me-2">
+            {% if user_type == 'clients' %}
+                <option value="">Filtrar por</option>
+                <option value="nombre" {% if filter_attribute == 'nombre' %}selected{% endif %}>Nombre</option>
+                <option value="email" {% if filter_attribute == 'email' %}selected{% endif %}>Email</option>
+                <option value="supermercado" {% if filter_attribute == 'supermercado' %}selected{% endif %}>Supermercado</option>
+            {% elif user_type == 'employees' %}
+                <option value="">Filtrar por</option>
+                <option value="nombre" {% if filter_attribute == 'nombre' %}selected{% endif %}>Nombre</option>
+                <option value="email" {% if filter_attribute == 'email' %}selected{% endif %}>Email</option>
+                <option value="cargo" {% if filter_attribute == 'cargo' %}selected{% endif %}>Cargo</option>
+            {% endif %}
+        </select>
+    
+        <button type="submit" class="btn btn-secondary">Buscar</button>
+    </form>
+    
+
+    {% if users %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        {% if user_type == 'clients' %}
+                            <th>Supermercado</th>
+                        {% elif user_type == 'employees' %}
+                            <th>Cargo</th>
+                        {% endif %}
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.get_full_name }}</td>
+                        <td>{{ user.email }}</td>
+                        {% if user_type == 'clients' %}
+                            <td>{{ user.cliente_profile.nombre_supermercado }}</td>
+                        {% elif user_type == 'employees' %}
+                            <td>{{ user.employee_profile.get_cargo_display }}</td>
+                        {% endif %}
+                        <td>
+                            <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ user.is_active|yesno:"Activo,Inactivo" }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                {% if user_type == 'clients' %}
+                                    <a href="{% url 'users:detail_client' user.pk %}" class="btn btn-sm btn-info" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'users:update_client' user.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                {% elif user_type == 'employees' %}
+                                    <a href="{% url 'users:detail_employee' user.pk %}" class="btn btn-sm btn-info" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'users:update_employee' user.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Controles de paginación -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if users.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.previous_page_number }}&search={{ search_query }}&filter_by={{ filter_by }}">Anterior</a>
+                    </li>
+                {% endif %}
+                {% for num in users.paginator.page_range %}
+                    <li class="page-item {% if users.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}&search={{ search_query }}&filter_by={{ filter_by }}">{{ num }}</a>
+                    </li>
+                {% endfor %}
+                {% if users.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ users.next_page_number }}&search={{ search_query }}&filter_by={{ filter_by }}">Siguiente</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            No hay {{ title|lower }} registrados aún.
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .btn-group .btn {
+        margin-right: 0.25rem;
+    }
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.35em 0.65em;
+    }
+</style>
+{% endblock %}

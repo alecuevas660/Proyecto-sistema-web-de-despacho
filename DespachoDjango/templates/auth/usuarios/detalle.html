@@ -1,0 +1,67 @@
+{% extends 'auth/usuarios/base_usuarios.html' %}
+{% load static %}
+
+{% block usuario_content %}
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if user_detail.avatar %}
+                    <img src="{{ user_detail.avatar.url }}" alt="Avatar" class="rounded-circle img-thumbnail mb-3" style="width: 150px; height: 150px;">
+                {% else %}
+                    <div class="avatar-placeholder mb-3">
+                        <i class="fas fa-user fa-5x"></i>
+                    </div>
+                {% endif %}
+                <h4>{{ user_detail.get_full_name }}</h4>
+                <p class="text-muted">{{ user_detail.get_role_display }}</p>
+                <div class="badge {% if user_detail.is_active %}bg-success{% else %}bg-danger{% endif %} mb-3">
+                    {{ user_detail.is_active|yesno:"Activo,Inactivo" }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Información Detallada</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Email:</strong> {{ user_detail.email }}</p>
+                        <p><strong>Teléfono:</strong> {{ user_detail.telefono|default:"No especificado" }}</p>
+                        <p><strong>Fecha de registro:</strong> {{ user_detail.date_joined|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Último acceso:</strong> {{ user_detail.last_login|date:"d/m/Y H:i"|default:"Nunca" }}</p>
+                    </div>
+                    
+                    {% if profile %}
+                        <div class="col-md-6">
+                            {% if user_detail.is_client %}
+                                <p><strong>Supermercado:</strong> {{ profile.nombre_supermercado }}</p>
+                                <p><strong>RUT:</strong> {{ profile.rut_empresa }}</p>
+                                <p><strong>Dirección de envío:</strong> {{ profile.direccion_envio }}</p>
+                                <p><strong>Límite de crédito:</strong> ${{ profile.limite_credito }}</p>
+                            {% elif user_detail.is_employee %}
+                                <p><strong>Departamento:</strong> {{ profile.departamento }}</p>
+                                <p><strong>Cargo:</strong> {{ profile.cargo }}</p>
+                                <p><strong>Fecha de contratación:</strong> {{ profile.fecha_contratacion|date:"d/m/Y" }}</p>
+                                {% if profile.supervisor %}
+                                    <p><strong>Supervisor:</strong> {{ profile.supervisor.user.get_full_name }}</p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 d-flex justify-content-end">
+            <a href="{{ back_url }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

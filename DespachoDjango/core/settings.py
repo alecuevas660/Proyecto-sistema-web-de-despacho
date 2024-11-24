@@ -1,6 +1,7 @@
 from pathlib import Path
 import os
 import sys
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,6 +19,8 @@ ALLOWED_HOSTS = []
 
 # Application definition
 DJANGO_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,11 +34,13 @@ THIRD_PARTY_APPS = [
 ]
 
 LOCAL_APPS = [
-    'apps.users.apps.UsersConfig',
+    'apps.users.apps.UsersConfig',  # Cambiado de useraccount a users
     'apps.home.apps.HomeConfig',
     'apps.inventario.apps.InventarioConfig',
+    'apps.users.apps.UsersConfig',
     'apps.ventas.apps.VentasConfig',
-    'apps.ordenes.apps.OrdenesConfig',
+    'apps.reportebackend.apps.ReportebackendConfig',  
+    'apps.reportes.apps.ReportesConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS + ["django_browser_reload"]
@@ -72,6 +77,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'App.wsgi.application'
+
+# Configuración de Channels
+ASGI_APPLICATION = 'core.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 DATABASES = {
@@ -211,7 +227,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),  # Asegúrate de que esta línea esté presente
+            os.path.join(BASE_DIR, 'templates'),  # Asegúrate de que esta línea esté aquí
         ],
         'APP_DIRS': True,
         'OPTIONS': {
