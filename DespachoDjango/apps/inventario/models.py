@@ -4,7 +4,9 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-
+from datetime import timedelta
+import random
+from django.utils import timezone
 
 class EstadoEnvio:
     """Opciones para el estado de envío"""
@@ -147,9 +149,8 @@ class DetalleCompra(models.Model):
     """Modelo que representa los detalles de una compra."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    producto = models.ForeignKey(
+    producto = models.ManyToManyField(
         Product,
-        on_delete=models.PROTECT,
         related_name='detalles_compra',
         verbose_name='Producto'
     )
@@ -168,7 +169,17 @@ class DetalleCompra(models.Model):
         verbose_name_plural = 'Detalles de Compras'
 
     def __str__(self):
-        return f"Compra de {self.cantidad_productos} {self.producto.name}"
+        productos = ", ".join([producto.name for producto in self.producto.all()])
+        return f"Compra de {self.cantidad_productos} de stock de el(los) producto(s): {productos}"
+    
+    def clean(self):
+        productos = self.producto.all()  # Obtén todos los productos relacionados
+        for producto in productos:
+            if producto.get_stock_actual() < self.cantidad_productos:
+                raise ValidationError(
+                    f"No hay suficiente stock para el producto {producto.name}. "
+                    f"Stock actual: {producto.get_stock_actual()}, cantidad solicitada: {self.cantidad_productos}."
+                    )
 
     @property
     def total(self):
@@ -193,9 +204,8 @@ class OrdenDespacho(models.Model):
         limit_choices_to={'role': 'transport'},
         verbose_name='Transportista'
     )
-    compra = models.ForeignKey(
+    compra = models.ManyToManyField(
         DetalleCompra,
-        on_delete=models.PROTECT,
         related_name='ordenes',
         verbose_name='Compra'
     )
@@ -203,7 +213,13 @@ class OrdenDespacho(models.Model):
     fecha_creacion = models.DateTimeField(
         'Fecha de Creación', auto_now_add=True)
     observaciones = models.TextField('Observaciones', blank=True)
+    tiempo_salida_aprox = models.DateTimeField('Tiempo Aproximado de Salida', blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        if not self.tiempo_salida_aprox:
+            self.tiempo_salida_aprox = timezone.now() + timedelta(days=random.randint(2, 3))
+        super().save(*args, **kwargs)
+        
     class Meta:
         db_table = 'orden_despacho'
         verbose_name = 'Orden de Despacho'
@@ -240,6 +256,16 @@ class SeguimientoEnvio(models.Model):
         verbose_name = 'Seguimiento de Envío'
         verbose_name_plural = 'Seguimientos de Envíos'
         ordering = ['-fecha_actualizacion']
+    
+    def cambiar_estado(self, nuevo_estado, comentarios=""):
+        """Cambia el estado del envío y actualiza los comentarios."""
+        estados_validos = dict(EstadoEnvio.CHOICES)
+        if nuevo_estado not in estados_validos:
+            raise ValueError(f"Estado '{nuevo_estado}' no es válido.")
+
+        self.estado_envio = nuevo_estado
+        self.comentarios = comentarios
+        self.save()
 
     def __str__(self):
         return f"Seguimiento de Orden #{self.orden.id} - {self.get_estado_envio_display()}"
@@ -248,6 +274,7 @@ class SeguimientoEnvio(models.Model):
 class Envio(models.Model):
     descripcion = models.CharField(max_length=255)
     fecha_envio = models.DateField()
+    fecha_entrega = models.DateField(null=True, blank=True)
     estado = models.CharField(max_length=100)
 
     def __str__(self):

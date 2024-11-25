@@ -17,15 +17,19 @@ class CustomUserManager(BaseUserManager):
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
+        
+        # Verificar si debemos crear el perfil automáticamente
+        create_profile = not getattr(user, '_dont_setup_profile', False)
         user.save(using=self._db)
 
-        # Crear perfil automáticamente según el rol
-        if user.role == 'client':
-            ClienteProfile.objects.create(user=user)
-        elif user.role == 'transport':
-            TransportistaProfile.objects.create(user=user)
-        elif user.role == 'employee':
-            EmployeeProfile.objects.create(user=user)
+        # Crear perfil automáticamente según el rol solo si no se indica lo contrario
+        if create_profile:
+            if user.role == 'client':
+                ClienteProfile.objects.create(user=user)
+            elif user.role == 'transport':
+                TransportistaProfile.objects.create(user=user)
+            elif user.role == 'employee':
+                EmployeeProfile.objects.create(user=user)
 
         return user
 
@@ -239,6 +243,29 @@ class TransportistaProfile(models.Model):
         self.entregas_completadas += 1
         self.save()
 
+class Departamento_empleado(models.Model):
+    """Modelo para gestionar los departamentos de la empresa."""
+    
+    id_departamento = models.AutoField(primary_key=True)
+    nombre = models.CharField('Nombre del Departamento', max_length=100, unique=True)
+    
+    class Meta:
+        db_table = 'departamentos'
+        verbose_name = 'Departamento'
+        verbose_name_plural = 'Departamentos'
+        ordering = ['nombre']
+    
+    def __str__(self):
+        return self.nombre
+
+    @classmethod
+    def get_default_pk(cls):
+        dept, created = cls.objects.get_or_create(
+            nombre='General',
+            defaults={'nombre': 'General'}
+        )
+        return dept.pk
+
 class EmployeeProfile(models.Model):
     """Perfil extendido para usuarios con rol de empleado."""
     
@@ -256,7 +283,12 @@ class EmployeeProfile(models.Model):
         primary_key=True,
         related_name='employee_profile'
     )
-    departamento = models.CharField('Departamento', max_length=100)
+    departamento = models.ForeignKey(
+        Departamento_empleado,
+        on_delete=models.SET_DEFAULT,
+        default=Departamento_empleado.get_default_pk,
+        verbose_name='Departamento'
+    )
     cargo = models.CharField('Cargo', max_length=100, choices=ROLES_CHOICES)
     fecha_contratacion = models.DateField('Fecha de Contratación', default=timezone.now)
     supervisor = models.ForeignKey(

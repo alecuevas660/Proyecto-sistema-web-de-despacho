@@ -1,51 +1,6 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Órdenes de Despacho</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-</head>
-<body>
-    <div class="d-flex">
-        <!-- Barra lateral -->
-        <nav class="sidebar bg-light" style="width: 80px; height: 100vh; position: fixed; top: 0; left: 0;">
-            <ul class="nav flex-column text-center pt-3">
-                <li class="nav-item mb-3">
-                    <a href="#" class="nav-link text-dark">
-                        <i class="fas fa-home fa-lg"></i>
-                        <p class="small">Inicio</p>
-                    </a>
-                </li>
-                <li class="nav-item mb-3">
-                    <a href="../inventario.html" class="nav-link text-dark">
-                        <i class="fas fa-box-open fa-lg"></i>
-                        <p class="small">Inventario</p>
-                    </a>
-                </li>
-                <li class="nav-item mb-3">
-                    <a href="#" class="nav-link text-dark">
-                        <i class="fas fa-truck fa-lg"></i>
-                        <p class="small">Despacho</p>
-                    </a>
-                </li>
-                <li class="nav-item mb-3">
-                    <a href="../reportebackend.html" class="nav-link text-dark">
-                        <i class="fas fa-chart-line fa-lg"></i>
-                        <p class="small">Reportes</p>
-                    </a>
-                </li>
-                <li class="nav-item mb-3">
-                    <a href="#" class="nav-link text-dark">
-                        <i class="fas fa-users fa-lg"></i>
-                        <p class="small">Clientes</p>
-                    </a>
-                </li>
-            </ul>
-        </nav>
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
 
         <!-- Contenido principal -->
         <div class="content container mt-5" style="margin-left: 100px; padding-top: 20px;">
@@ -55,9 +10,10 @@
                 <!-- Barra de búsqueda -->
                 <input type="text" class="form-control w-25" placeholder="Search">
                 <!-- Botón para agregar nueva orden -->
-                <button class="btn btn-custom ml-2" style="background-color: #28a745; color: white; border: none;">
+                <a href="{% url 'inventario:despacho_create' %}" class="btn btn-custom ml-2" 
+                        style="background-color: #28a745; color: white; border: none;">
                     + Nueva Orden
-                </button>
+                </a>
                 <!-- Selección de número de órdenes por página -->
                 <select class="form-control w-25 ml-2">
                     <option>5 por página</option>
@@ -83,53 +39,41 @@
                         <tr>
                             <th>Orden ID <span>&#8597;</span></th>
                             <th>Cliente</th>
-                            <th>ETA</th>
+                            <th>Fecha de creacion</th>
+                            <th>Tiempo estimado</th>
                             <th>Estado</th>
                             <th>Dirección</th>
                             <th>Asignado a</th>
                         </tr>
                     </thead>
                     <tbody>
+                        {% for orden in ordenes %}
                         <tr>
-                            <td>ORD-001</td>
-                            <td>Supermercado A</td>
-                            <td>30 min</td>
-                            <td><span class="badge badge-secondary">Bajo</span></td>
-                            <td>Calle 1 #123</td>
-                            <td>Juan Pérez</td>
+                            <td>{{ orden.id }}</td>
+                            <td>{{ orden.cliente }}</td>
+                            <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td> 
+                            <td>{{ orden.tiempo_salida_aprox|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if orden.estado_envio_reciente == 'Enviado' %}
+                                        badge-success
+                                    {% elif orden.estado_envio_reciente == 'Pendiente' %}
+                                        badge-warning
+                                    {% elif orden.estado_envio_reciente == 'Cancelado' %}
+                                        badge-danger
+                                    {% else %}
+                                        badge-secondary
+                                    {% endif %}
+                                ">{{ orden.estado_envio_reciente }}</span>
+                            </td>
+                            <td>{{ orden.direccion_entrega }}</td>
+                            <td>{{ orden.transportista }}</td>
                         </tr>
+                        {% empty %}
                         <tr>
-                            <td>ORD-002</td>
-                            <td>Supermercado B</td>
-                            <td>-</td>
-                            <td><span class="badge badge-danger">Crítico</span></td>
-                            <td>Av. Principal #123</td>
-                            <td>Maria Gómez</td>
+                            <td colspan="6">No hay órdenes disponibles.</td>
                         </tr>
-                        <tr>
-                            <td>ORD-003</td>
-                            <td>Supermercado C</td>
-                            <td>15 min</td>
-                            <td><span class="badge badge-success">Óptimo</span></td>
-                            <td>Plaza Central #12</td>
-                            <td>Carlos Rodríguez</td>
-                        </tr>
-                        <tr>
-                            <td>ORD-004</td>
-                            <td>Supermercado D</td>
-                            <td>1h 10min</td>
-                            <td><span class="badge badge-success">Óptimo</span></td>
-                            <td>Calle 10 #5432</td>
-                            <td>Ana Martínez</td>
-                        </tr>
-                        <tr>
-                            <td>ORD-005</td>
-                            <td>Supermercado E</td>
-                            <td>2h</td>
-                            <td><span class="badge badge-success">Óptimo</span></td>
-                            <td>Av. Segundaria #13</td>
-                            <td>Pedro Sánchez</td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -153,9 +97,4 @@
         </div>
     </div>
 
-    <!-- Scripts de Bootstrap (jQuery y JavaScript) -->
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+    {% endblock %}  

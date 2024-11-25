@@ -1,0 +1,92 @@
+{% extends 'dashboard/base_dashboard.html' %} {% block title %}Historial de
+Envíos{% endblock %} {% block content %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historial de Órdenes</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="../static/css/historial.css" />
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h2 class="mb-4">Historial de Órdenes</h2>
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <select class="form-control w-25" id="filtroFecha">
+          <option value="1">Últimos 30 días</option>
+          <option value="3">Últimos 3 meses</option>
+          <option value="6">Últimos 6 meses</option>
+        </select>
+        <button class="btn btn-primary" onclick="filtrarHistorial()">
+          Filtrar
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Estado</th>
+              <th>Fecha de Finalización</th>
+            </tr>
+          </thead>
+          <tbody id="tablaHistorial">
+            <!-- Rellenar dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      async function cargarHistorial() {
+        try {
+          const response = await fetch("/api/historial_ordenes"); // Endpoint ajustado
+          const data = await response.json();
+
+          const tabla = document.getElementById("tablaHistorial");
+          tabla.innerHTML = data.historial
+            .map(
+              (orden, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${orden.producto}</td>
+                    <td>${orden.cantidad}</td>
+                    <td>
+                        <span class="badge badge-${
+                          orden.estado === "Completado"
+                            ? "success"
+                            : "secondary"
+                        }">
+                            ${orden.estado}
+                        </span>
+                    </td>
+                    <td>${orden.fechaFinalizacion}</td>
+                </tr>
+            `
+            )
+            .join("");
+        } catch (error) {
+          console.error("Error al cargar historial:", error);
+        }
+      }
+
+      function filtrarHistorial() {
+        const filtro = document.getElementById("filtroFecha").value;
+        console.log("Filtrar por:", filtro); // Lógica adicional según backend
+      }
+
+      cargarHistorial();
+    </script>
+  </body>
+</html>
+{% endblock %}

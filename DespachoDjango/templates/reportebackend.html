@@ -1,9 +1,16 @@
 {% extends 'dashboard/base_dashboard.html' %}
 
 {% block content %}
-    <h1>Generar Reportes Financieros</h1>
+    <h1>Generar Reportes de Ordenes</h1>
     <hr>
-
+    <div class="d-flex justify-content-end mb-3">
+        <h6>Exportar a:</h6>
+    </div>
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{% url 'reportebackend:exportar_pdf' %}" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
+        <a href="{% url 'reportebackend:exportar_excel' %}" class="btn btn-sm btn-success ms-2"><i class="fas fa-file-excel"></i> Excel</a>
+    </div> <br>
+    
     <!-- Filtro de búsqueda -->
     <div class="row mb-4">
         <div class="col-md-12">
@@ -30,7 +37,6 @@
                     <th style="width: 400px;">ID de la Orden</th>
                     <th>Cliente</th>
                     <th>Asignado a</th>
-                    <th>Descargar</th> <!-- Columna adicional para los botones de descarga -->
                 </tr>
             </thead>
             <tbody>
@@ -39,11 +45,6 @@
                         <td>{{ orden.id }}</td>
                         <td>{{ orden.cliente.cliente_profile.nombre_supermercado }}</td>
                         <td>{{ orden.transportista.get_full_name }}</td>
-                        <td>
-                            <!-- Botones para descargar PDF y Excel -->
-                            <a href="#" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i>  PDF</a>
-                            <a href="#" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Excel</a>
-                        </td>
                     </tr>
                 {% empty %}
                     <tr>
@@ -95,4 +96,5 @@
         </ul>
     </nav>
     {% endif %}
+
 {% endblock %}

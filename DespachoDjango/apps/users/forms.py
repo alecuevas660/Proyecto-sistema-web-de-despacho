@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import ModelForm
-from .models import User, ClienteProfile, EmployeeProfile
+from .models import User, ClienteProfile, EmployeeProfile, Departamento_empleado
 
 class ClienteForm(UserCreationForm):
     nombre_supermercado = forms.CharField(max_length=255)
@@ -28,9 +28,52 @@ class ClienteForm(UserCreationForm):
         return user
 
 class EmployeeForm(UserCreationForm):
-    departamento = forms.CharField(max_length=100)
-    cargo = forms.CharField(max_length=100)
-    fecha_contratacion = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    # Campos del usuario
+    email = forms.EmailField(
+        label='Correo Electrónico',
+        widget=forms.EmailInput(attrs={'class': 'form-control'})
+    )
+    nombre = forms.CharField(
+        label='Nombre',
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    apellido = forms.CharField(
+        label='Apellido',
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    telefono = forms.CharField(
+        label='Teléfono',
+        max_length=17,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    password1 = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    password2 = forms.CharField(
+        label='Confirmar Contraseña',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+
+    # Campos del perfil de empleado
+    departamento = forms.ModelChoiceField(
+        queryset=Departamento_empleado.objects.all(),
+        empty_label="Seleccione un departamento",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    cargo = forms.ChoiceField(
+        choices=EmployeeProfile.ROLES_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    fecha_contratacion = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
 
     class Meta:
         model = User
@@ -40,15 +83,22 @@ class EmployeeForm(UserCreationForm):
         user = super().save(commit=False)
         user.role = 'employee'
         user.is_staff = True
+        # Establecer el flag para evitar la creación automática del perfil
+        setattr(user, '_dont_setup_profile', True)
+        
         if commit:
             user.save()
-            EmployeeProfile.objects.create(
-                user=user,
-                departamento=self.cleaned_data['departamento'],
-                cargo=self.cleaned_data['cargo'],
-                fecha_contratacion=self.cleaned_data['fecha_contratacion']
-            )
-        return user 
+            # Crear el perfil manualmente
+            try:
+                EmployeeProfile.objects.get(user=user)
+            except EmployeeProfile.DoesNotExist:
+                EmployeeProfile.objects.create(
+                    user=user,
+                    departamento=self.cleaned_data['departamento'],
+                    cargo=self.cleaned_data['cargo'],
+                    fecha_contratacion=self.cleaned_data['fecha_contratacion']
+                )
+        return user
 
 class ClienteUpdateForm(ModelForm):
     nombre_supermercado = forms.CharField(max_length=255)
