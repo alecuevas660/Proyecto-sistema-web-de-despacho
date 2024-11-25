@@ -5,12 +5,15 @@ from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+<<<<<<< HEAD
+=======
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'ojzo0epk3%(9yk56%%2be!25z)7@&5&hwf92coe_f!$vc1us0_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
+>>>>>>> origin/main_seguro
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Application definition
@@ -33,7 +36,12 @@ LOCAL_APPS = [
     'apps.home.apps.HomeConfig',
     'apps.inventario.apps.InventarioConfig',
     'apps.ventas.apps.VentasConfig',
+<<<<<<< HEAD
+    'apps.email_service.apps.EmailServiceConfig'
+
+=======
     'apps.reportes.apps.ReportesConfig',
+>>>>>>> origin/main_seguro
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
