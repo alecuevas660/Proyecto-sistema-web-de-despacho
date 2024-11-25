@@ -4,6 +4,9 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
+from datetime import timedelta
+import random
+from django.utils import timezone
 
 class EstadoEnvio:
     """Opciones para el estado de envío"""
@@ -18,6 +21,7 @@ class EstadoEnvio:
         (ENTREGADO, 'Entregado'),
         (CANCELADO, 'Cancelado'),
     ]
+
 
 class Categoria(models.Model):
     """Modelo que representa una categoría de producto."""
@@ -37,13 +41,15 @@ class Categoria(models.Model):
     def __str__(self):
         return self.nombre
 
+
 class Product(models.Model):
     """Modelo que representa un producto en el sistema."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(
         'Nombre',
         max_length=255,
-        validators=[MinLengthValidator(3, 'El nombre debe tener al menos 3 caracteres')]
+        validators=[MinLengthValidator(
+            3, 'El nombre debe tener al menos 3 caracteres')]
     )
     categoria = models.ForeignKey(
         Categoria,
@@ -79,27 +85,28 @@ class Product(models.Model):
     def get_stock_status(self):
         """Retorna el estado del stock basado en el stock actual y mínimo"""
         stock_actual = self.get_stock_actual()
-        if stock_actual >= self.stock_minimo * 3/3:  # 100% o más del mínimo
+        if stock_actual >= self.stock_minimo:  # 100% o más del mínimo
             return ('Óptimo', 'success')
-        elif stock_actual >= self.stock_minimo * 2/3:  # 66% o más del mínimo
+        elif stock_actual >= self.stock_minimo * 1/3:  # 33% o más del mínimo
             return ('Bajo', 'warning')
-        else:  # Menos del 66% del mínimo
+        else:  # Menos del 33% del mínimo
             return ('Crítico', 'danger')
 
     def clean(self):
         """Validaciones personalizadas del modelo"""
         if self.price and self.price <= 0:
             raise ValidationError({'price': 'El precio debe ser mayor que 0'})
-        
+
         if self.stock_minimo and self.stock_minimo < 0:
-            raise ValidationError({'stock_minimo': 'El stock mínimo no puede ser negativo'})
-        
+            raise ValidationError(
+                {'stock_minimo': 'El stock mínimo no puede ser negativo'})
+
         if self.name and self.categoria:
             exists = Product.objects.filter(
                 name__iexact=self.name,
                 categoria=self.categoria
             ).exclude(pk=self.pk).exists()
-            
+
             if exists:
                 raise ValidationError({
                     'name': 'Ya existe un producto con este nombre en la misma categoría'
@@ -110,6 +117,7 @@ class Product(models.Model):
             self.name = self.name.strip()
         self.full_clean()
         super().save(*args, **kwargs)
+
 
 class StockVariable(models.Model):
     """Modelo que representa el historial de stock de un producto."""
@@ -122,9 +130,10 @@ class StockVariable(models.Model):
         verbose_name='Producto'
     )
     cantidad_stock = models.PositiveIntegerField('Cantidad en Stock')
-    fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
-    motivo = models.CharField('Motivo de Actualización', max_length=255, blank=True)
-
+    fecha_actualizacion = models.DateTimeField(
+        'Fecha de Actualización', auto_now=True)
+    motivo = models.CharField(
+        'Motivo de Actualización', max_length=255, blank=True)
 
     class Meta:
         db_table = 'stock_variable'
@@ -135,13 +144,13 @@ class StockVariable(models.Model):
     def __str__(self):
         return f"{self.producto.name} - Stock: {self.cantidad_stock}"
 
+
 class DetalleCompra(models.Model):
     """Modelo que representa los detalles de una compra."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    producto = models.ForeignKey(
+    producto = models.ManyToManyField(
         Product,
-        on_delete=models.PROTECT,
         related_name='detalles_compra',
         verbose_name='Producto'
     )
@@ -160,12 +169,23 @@ class DetalleCompra(models.Model):
         verbose_name_plural = 'Detalles de Compras'
 
     def __str__(self):
-        return f"Compra de {self.cantidad_productos} {self.producto.name}"
+        productos = ", ".join([producto.name for producto in self.producto.all()])
+        return f"Compra de {self.cantidad_productos} de stock de el(los) producto(s): {productos}"
+    
+    def clean(self):
+        productos = self.producto.all()  # Obtén todos los productos relacionados
+        for producto in productos:
+            if producto.get_stock_actual() < self.cantidad_productos:
+                raise ValidationError(
+                    f"No hay suficiente stock para el producto {producto.name}. "
+                    f"Stock actual: {producto.get_stock_actual()}, cantidad solicitada: {self.cantidad_productos}."
+                    )
 
     @property
     def total(self):
         """Calcula el total de la compra"""
         return self.cantidad_productos * self.precio_unitario
+
 
 class OrdenDespacho(models.Model):
     """Modelo que representa una orden de despacho."""
@@ -184,16 +204,22 @@ class OrdenDespacho(models.Model):
         limit_choices_to={'role': 'transport'},
         verbose_name='Transportista'
     )
-    compra = models.ForeignKey(
+    compra = models.ManyToManyField(
         DetalleCompra,
-        on_delete=models.PROTECT,
         related_name='ordenes',
         verbose_name='Compra'
     )
     direccion_entrega = models.TextField('Dirección de Entrega')
-    fecha_creacion = models.DateTimeField('Fecha de Creación', auto_now_add=True)
+    fecha_creacion = models.DateTimeField(
+        'Fecha de Creación', auto_now_add=True)
     observaciones = models.TextField('Observaciones', blank=True)
+    tiempo_salida_aprox = models.DateTimeField('Tiempo Aproximado de Salida', blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        if not self.tiempo_salida_aprox:
+            self.tiempo_salida_aprox = timezone.now() + timedelta(days=random.randint(2, 3))
+        super().save(*args, **kwargs)
+        
     class Meta:
         db_table = 'orden_despacho'
         verbose_name = 'Orden de Despacho'
@@ -201,7 +227,8 @@ class OrdenDespacho(models.Model):
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f"Orden #{self.id} - Cliente: {self.cliente.get_full_name()}"
+        return f"Orden #{self.id} - Cliente: {self.cliente.get_full_name()}- Transportista: {self.transportista.get_full_name()}"
+
 
 class SeguimientoEnvio(models.Model):
     """Modelo que representa el seguimiento de un envío."""
@@ -218,18 +245,51 @@ class SeguimientoEnvio(models.Model):
         choices=EstadoEnvio.CHOICES,
         default=EstadoEnvio.PENDIENTE
     )
-    ubicacion_actual = models.CharField('Ubicación Actual', max_length=255, blank=True)
+    ubicacion_actual = models.CharField(
+        'Ubicación Actual', max_length=255, blank=True)
     comentarios = models.TextField('Comentarios', blank=True)
-    fecha_actualizacion = models.DateTimeField('Fecha de Actualización', auto_now=True)
+    fecha_actualizacion = models.DateTimeField(
+        'Fecha de Actualización', auto_now=True)
 
     class Meta:
         db_table = 'seguimiento_envio'
         verbose_name = 'Seguimiento de Envío'
         verbose_name_plural = 'Seguimientos de Envíos'
         ordering = ['-fecha_actualizacion']
+    
+    def cambiar_estado(self, nuevo_estado, comentarios=""):
+        """Cambia el estado del envío y actualiza los comentarios."""
+        estados_validos = dict(EstadoEnvio.CHOICES)
+        if nuevo_estado not in estados_validos:
+            raise ValueError(f"Estado '{nuevo_estado}' no es válido.")
+
+        self.estado_envio = nuevo_estado
+        self.comentarios = comentarios
+        self.save()
 
     def __str__(self):
         return f"Seguimiento de Orden #{self.orden.id} - {self.get_estado_envio_display()}"
+
+
+class Envio(models.Model):
+    descripcion = models.CharField(max_length=255)
+    fecha_envio = models.DateField()
+    fecha_entrega = models.DateField(null=True, blank=True)
+    estado = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.descripcion
+
+
+class EstadoEnvio(models.Model):
+    envio = models.ForeignKey('Envio', on_delete=models.CASCADE)
+    estado = models.CharField(max_length=50)
+    descripcion = models.TextField()
+    fecha_actualizacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.envio} - {self.estado}"
+
 
 class ReporteEnvios(models.Model):
     """Modelo que representa un reporte de envíos."""
@@ -237,9 +297,12 @@ class ReporteEnvios(models.Model):
     fecha_inicio = models.DateField('Fecha Inicial')
     fecha_fin = models.DateField('Fecha Final')
     total_envios = models.PositiveIntegerField('Total de Envíos', default=0)
-    envios_completados = models.PositiveIntegerField('Envíos Completados', default=0)
-    envios_pendientes = models.PositiveIntegerField('Envíos Pendientes', default=0)
-    fecha_generacion = models.DateTimeField('Fecha de Generación', auto_now_add=True)
+    envios_completados = models.PositiveIntegerField(
+        'Envíos Completados', default=0)
+    envios_pendientes = models.PositiveIntegerField(
+        'Envíos Pendientes', default=0)
+    fecha_generacion = models.DateTimeField(
+        'Fecha de Generación', auto_now_add=True)
 
     class Meta:
         db_table = 'reporte_envios'
@@ -249,6 +312,7 @@ class ReporteEnvios(models.Model):
 
     def __str__(self):
         return f"Reporte de Envíos {self.fecha_inicio} - {self.fecha_fin}"
+
 
 class ReporteFinanciero(models.Model):
     """Modelo que representa un reporte financiero."""
@@ -262,7 +326,8 @@ class ReporteFinanciero(models.Model):
         default=0
     )
     total_envios = models.PositiveIntegerField('Total Envíos', default=0)
-    fecha_generacion = models.DateTimeField('Fecha de Generación', auto_now_add=True)
+    fecha_generacion = models.DateTimeField(
+        'Fecha de Generación', auto_now_add=True)
 
     class Meta:
         db_table = 'reporte_financiero'

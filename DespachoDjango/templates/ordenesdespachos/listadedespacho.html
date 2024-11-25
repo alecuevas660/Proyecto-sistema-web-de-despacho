@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -46,6 +47,11 @@
                 </li>
             </ul>
         </nav>
+=======
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+>>>>>>> origin/main_seguro
 
         <!-- Contenido principal -->
         <div class="content container mt-5" style="margin-left: 100px; padding-top: 20px;">
@@ -55,7 +61,14 @@
                 <!-- Barra de búsqueda -->
                 <input type="text" class="form-control w-25" placeholder="Search">
                 <!-- Botón para agregar nueva orden -->
+<<<<<<< HEAD
                 <button class="btn btn-secondary ml-2">+ Nueva Orden</button>
+=======
+                <a href="{% url 'inventario:despacho_create' %}" class="btn btn-custom ml-2" 
+                        style="background-color: #28a745; color: white; border: none;">
+                    + Nueva Orden
+                </a>
+>>>>>>> origin/main_seguro
                 <!-- Selección de número de órdenes por página -->
                 <select class="form-control w-25 ml-2">
                     <option>5 por página</option>
@@ -81,13 +94,19 @@
                         <tr>
                             <th>Orden ID <span>&#8597;</span></th>
                             <th>Cliente</th>
+<<<<<<< HEAD
                             <th>ETA</th>
+=======
+                            <th>Fecha de creacion</th>
+                            <th>Tiempo estimado</th>
+>>>>>>> origin/main_seguro
                             <th>Estado</th>
                             <th>Dirección</th>
                             <th>Asignado a</th>
                         </tr>
                     </thead>
                     <tbody>
+<<<<<<< HEAD
                         <tr>
                             <td>ORD-001</td>
                             <td>Supermercado A</td>
@@ -128,6 +147,35 @@
                             <td>Av. Segundaria #13</td>
                             <td>Pedro Sánchez</td>
                         </tr>
+=======
+                        {% for orden in ordenes %}
+                        <tr>
+                            <td>{{ orden.id }}</td>
+                            <td>{{ orden.cliente }}</td>
+                            <td>{{ orden.fecha_creacion|date:"d/m/Y H:i" }}</td> 
+                            <td>{{ orden.tiempo_salida_aprox|date:"d/m/Y" }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if orden.estado_envio_reciente == 'Enviado' %}
+                                        badge-success
+                                    {% elif orden.estado_envio_reciente == 'Pendiente' %}
+                                        badge-warning
+                                    {% elif orden.estado_envio_reciente == 'Cancelado' %}
+                                        badge-danger
+                                    {% else %}
+                                        badge-secondary
+                                    {% endif %}
+                                ">{{ orden.estado_envio_reciente }}</span>
+                            </td>
+                            <td>{{ orden.direccion_entrega }}</td>
+                            <td>{{ orden.transportista }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">No hay órdenes disponibles.</td>
+                        </tr>
+                        {% endfor %}
+>>>>>>> origin/main_seguro
                     </tbody>
                 </table>
             </div>
@@ -151,9 +199,13 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <!-- Scripts de Bootstrap (jQuery y JavaScript) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
+=======
+    {% endblock %}  
+>>>>>>> origin/main_seguro

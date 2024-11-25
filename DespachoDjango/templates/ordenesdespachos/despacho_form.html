@@ -1,0 +1,26 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva Orden de Despacho</title>
+</head>
+<body>
+    <h1>Crear Nueva Orden de Despacho</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Guardar</button>
+    </form>
+    <a href="{% url 'inventario:listado_despacho' %}">Volver a la lista</a>
+</body>
+</html>
+
+
+
+
+
+{% endblock %} 
+
