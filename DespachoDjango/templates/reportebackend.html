@@ -12,10 +12,49 @@
     </div> <br>
     
     <!-- Filtro de búsqueda -->
+    <!--<div class="row mb-4">
+        <div class="col-md-12">
+            <form method="get" class="d-flex gap-2">
+                Búsqueda 
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control" placeholder=" Cliente Nombre Buscar..." value="{{ search }}">
+                </div>
+                <button type="submit" class="btn btn-primary">Buscar</button>
+                {% if search %}
+                    <a href="{% url 'reportebackend:reportebackend' %}" class="btn btn-secondary">Limpiar</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>-->
+
+    <!-- Filtro de búsqueda por fechas (inicio y fin) -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <form method="get" class="d-flex gap-3 align-items-center">
+                <!-- Fecha de inicio -->
+                <div class="mb-2">
+                    <label for="fecha_inicio" class="form-label text-muted small">Fecha de Inicio</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" class="form-control form-control-sm" value="{{ fecha_inicio }}">
+                </div>
+                <!-- Fecha de fin -->
+                <div class="mb-2">
+                    <label for="fecha_fin" class="form-label text-muted small">Fecha de Fin</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin" class="form-control form-control-sm" value="{{ fecha_fin }}">
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+                
+            </form>
+        </div>
+    </div>
+
+    <!-- Barra de búsqueda de cliente -->
     <div class="row mb-4">
         <div class="col-md-12">
             <form method="get" class="d-flex gap-2">
-                <!-- Búsqueda -->
+                <!--Búsqueda -->
                 <div class="input-group">
                     <span class="input-group-text">
                         <i class="fas fa-search"></i>
