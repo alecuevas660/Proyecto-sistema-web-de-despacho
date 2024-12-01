@@ -3,36 +3,15 @@
 {% block content %}
     <h1>Generar Reportes de Ordenes</h1>
     <hr>
-    <div class="d-flex justify-content-end mb-3">
-        <h6>Exportar a:</h6>
-    </div>
-    <div class="d-flex justify-content-end mb-3">
-        <a href="{% url 'reportebackend:exportar_pdf' %}" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
-        <a href="{% url 'reportebackend:exportar_excel' %}" class="btn btn-sm btn-success ms-2"><i class="fas fa-file-excel"></i> Excel</a>
-    </div> <br>
-    
-    <!-- Filtro de búsqueda -->
-    <!--<div class="row mb-4">
-        <div class="col-md-12">
-            <form method="get" class="d-flex gap-2">
-                Búsqueda 
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="fas fa-search"></i>
-                    </span>
-                    <input type="text" name="search" class="form-control" placeholder=" Cliente Nombre Buscar..." value="{{ search }}">
-                </div>
-                <button type="submit" class="btn btn-primary">Buscar</button>
-                {% if search %}
-                    <a href="{% url 'reportebackend:reportebackend' %}" class="btn btn-secondary">Limpiar</a>
-                {% endif %}
-            </form>
-        </div>
-    </div>-->
-
-    <!-- Filtro de búsqueda por fechas (inicio y fin) -->
-    <div class="row mb-4">
-        <div class="col-md-12">
+    <!-- Fila para los botones de exportación y el filtro por fecha -->
+    <div class="row mb-3 d-flex justify-content-between align-items-center">
+        <!-- Filtro de fechas (a la izquierda) -->
+        <div class="col-auto d-flex gap-3 align-items-center">
+            <!-- Título del filtro -->
+            <div class="mb-2">
+                <label class="form-label medium" style="color: black; font-weight: bold;">Rango de Reporte</label>
+            </div>
+            
             <form method="get" class="d-flex gap-3 align-items-center">
                 <!-- Fecha de inicio -->
                 <div class="mb-2">
@@ -45,8 +24,14 @@
                     <input type="date" id="fecha_fin" name="fecha_fin" class="form-control form-control-sm" value="{{ fecha_fin }}">
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
-                
             </form>
+        </div>
+
+        <!-- Botones de exportación (a la derecha) -->
+        <div class="col-auto">
+            <h6>Exportar a:</h6>
+            <a href="{% url 'reportebackend:exportar_pdf' %}" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
+            <a href="{% url 'reportebackend:exportar_excel' %}" class="btn btn-sm btn-success ms-2"><i class="fas fa-file-excel"></i> Excel</a>
         </div>
     </div>
 
