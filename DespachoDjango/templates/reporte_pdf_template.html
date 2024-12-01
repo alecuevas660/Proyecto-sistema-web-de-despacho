@@ -20,13 +20,23 @@
             text-align: left;
         }
         th {
-            background-color: #d9534f; 
-            color: white; 
+            background-color: #d9534f;
+            color: white;
         }
         .header {
             text-align: center;
             font-size: 18px;
             margin-bottom: 20px;
+        }
+        .fecha {
+            font-style: italic;
+            text-align: right;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .total-general {
+            font-weight: bold;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -35,30 +45,40 @@
     <div class="header">
         <h1>Reporte de Órdenes de Despacho</h1>
         <p>Generado el: {% now "d-m-Y" %}</p>
+
+        <!-- Fechas de inicio y fin -->
+        <p class="fecha">
+            Desde: {{ fecha_inicio }} Hasta: {{ fecha_fin }}
+        </p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th>ID de la Orden</th>
-                <th>Cliente</th>
-                <th>Asignado a</th>
+                <th >ID de la Orden</th>
+                <th >Cliente</th>
+                <th >Asignado a</th>
+                <th >Total de la Orden</th>  <!-- Nueva columna para el total de la orden -->
             </tr>
         </thead>
         <tbody>
             {% for orden in ordenes %}
                 <tr>
-                    <td>{{ orden.id }}</td>
-                    <td>{{ orden.cliente }}</td>
-                    <td>{{ orden.asignado_a }}</td>
+                    <td >{{ orden.id|slice:":18" }}</td>
+                    <td >{{ orden.cliente }}</td>
+                    <td >{{ orden.asignado_a }}</td>
+                    <td >${{ orden.total_orden }}</td>  <!-- Mostrar el total de cada orden -->
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="3">No hay órdenes registradas.</td>
+                    <td colspan="4">No hay órdenes registradas.</td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <!-- Mostrar el total general -->
+    <p class="total-general">Total General: ${{ total_general }}</p>
 
 </body>
 </html>

@@ -80,9 +80,9 @@ def exportar_excel(request):
 
     # Crear bordes para las celdas
     thin_border = Border(left=Side(style='thin'),
-                         right=Side(style='thin'),
-                         top=Side(style='thin'),
-                         bottom=Side(style='thin'))
+                        right=Side(style='thin'),
+                        top=Side(style='thin'),
+                        bottom=Side(style='thin'))
 
     # Sumar el total de las órdenes (simularemos el total)
     total_ordenes = 0
@@ -153,8 +153,98 @@ def exportar_excel(request):
 
 
 def exportar_pdf(request):
-    # Obtén los datos de las órdenes de despacho
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    if not fecha_inicio or not fecha_fin:
+        return HttpResponse("Error: Las fechas de inicio y fin son necesarias.", status=400)
+
+    try:
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+    except ValueError:
+        return HttpResponse("Error: El formato de las fechas es incorrecto.", status=400)
+
+    # Consulta a la base de datos
     queryset = OrdenDespacho.objects.select_related('cliente', 'cliente__cliente_profile', 'transportista')
+
+    ordenes_data = []
+    total_general = 0
+
+    if queryset.exists():
+        # Si hay órdenes en la base de datos
+        for orden in queryset:
+            cliente_nombre = orden.cliente.cliente_profile.nombre_supermercado if orden.cliente and orden.cliente.cliente_profile else "N/A"
+            transportista_nombre = orden.transportista.get_full_name() if orden.transportista else "N/A"
+            
+            # Simulamos el total de la orden con un número aleatorio entre 200.000 y 500.000 CLP
+            total_orden_simulado = random.randint(200000, 500000)
+
+            ordenes_data.append({
+                'id': str(orden.id),
+                'cliente': cliente_nombre,
+                'asignado_a': transportista_nombre,
+                'total_orden': total_orden_simulado
+            })
+            total_general += total_orden_simulado  # Acumulamos el total general
+    else:
+        # Si no hay órdenes, generamos datos aleatorios para 10 órdenes
+        min_precio = 5000
+        max_precio = 100000
+        for i in range(10):  # Generamos 10 órdenes aleatorias
+            total_orden_simulado = random.randint(min_precio, max_precio)  # Total aleatorio
+            total_general += total_orden_simulado
+
+            ordenes_data.append({
+                'id': str(i + 1),  # ID de la orden
+                'cliente': f'Cliente {i + 1}',  # Nombre de cliente simulado
+                'asignado_a': f'Empleado {random.randint(1, 5)}',  # Asignado a un empleado aleatorio
+                'total_orden': total_orden_simulado  # Total aleatorio de la orden
+            })
+
+    # Renderizar el HTML para el PDF
+    html_content = render_to_string('reporte_pdf_template.html', {
+        'ordenes': ordenes_data,
+        'fecha_inicio': fecha_inicio.strftime('%d-%m-%Y'),
+        'fecha_fin': fecha_fin.strftime('%d-%m-%Y'),
+        'total_general': total_general
+    })
+
+    # Generación del PDF
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="reporte_ordenes.pdf"'
+
+    pisa_status = pisa.CreatePDF(html_content, dest=response)
+
+    if pisa_status.err:
+        return HttpResponse('Error al generar el PDF', status=400)
+
+    return response
+
+
+#def exportar_pdf(request):
+    # Obtener las fechas de inicio y fin desde los parámetros de la solicitud
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    # Asegurarnos de que las fechas están en el formato correcto (si no están vacías)
+    if fecha_inicio and fecha_fin:
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')  # Convertir de string a datetime
+            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')  # Convertir de string a datetime
+        except ValueError:
+            return HttpResponse('Fecha inválida', status=400)
+    else:
+        # Si no se proporcionan fechas, usamos el rango completo (sin filtro de fecha)
+        fecha_inicio = None
+        fecha_fin = None
+
+    # Obtén los datos de las órdenes de despacho, aplicando el filtro de fechas si es necesario
+    queryset = OrdenDespacho.objects.select_related('cliente', 'cliente__cliente_profile', 'transportista')
+
+    # Filtrar por fechas si se proporcionaron
+    if fecha_inicio and fecha_fin:
+        queryset = queryset.filter(fecha_creacion__range=[fecha_inicio, fecha_fin])
 
     # Convertimos los UUIDs a cadenas (si es necesario)
     ordenes_data = []
@@ -166,11 +256,16 @@ def exportar_pdf(request):
         ordenes_data.append({
             'id': orden_id_str,
             'cliente': cliente_nombre,
-            'asignado_a': asignado_a
+            'asignado_a': asignado_a,
+            'fecha_creacion': orden.fecha_creacion.strftime('%Y-%m-%d')  # Formatear la fecha
         })
 
     # Renderizamos el HTML a partir de una plantilla
-    html_content = render_to_string('reporte_pdf_template.html', {'ordenes': ordenes_data})
+    html_content = render_to_string('reporte_pdf_template.html', {
+        'ordenes': ordenes_data,
+        'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else 'N/A',
+        'fecha_fin': fecha_fin.strftime('%Y-%m-%d') if fecha_fin else 'N/A'
+    })
 
     # Creamos una respuesta HTTP con el contenido PDF
     response = HttpResponse(content_type='application/pdf')
