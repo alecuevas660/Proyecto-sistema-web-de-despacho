@@ -1,0 +1,103 @@
+{% load custom_filters %}
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        padding: 0;
+        background-color: #f9f9f9;
+      }
+
+      h1 {
+        text-align: center;
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      p {
+        font-size: 14px;
+        color: #555;
+      }
+
+      .table-container {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+      }
+
+      table {
+        width: 100%;
+        border: 1px solid #ddd;
+        margin-top: 10px;
+      }
+
+      th, td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+
+      th {
+        background-color: #f2f2f2;
+        color: #333;
+        font-weight: bold;
+      }
+
+      td {
+        font-size: 14px;
+        color: #555;
+      }
+
+      .total {
+        font-size: 16px;
+        font-weight: bold;
+        margin-top: 20px;
+        text-align: right;
+      }
+
+      .highlight {
+        background-color: #eaf2f8;
+      }
+
+      .section-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-top: 30px;
+        color: #333;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Informe de Venta - {{ cliente }}</h1>
+
+    <p><strong>Asignado de Despacho:</strong> {{ asignado_despacho }}</p>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for producto in productos %}
+          <tr>
+            <td>{{ producto.nombre }}</td>
+            <td>{{ producto.cantidad }}</td>
+            <td>{{ producto.precio_unitario|punto_miles }}</td>
+            <td>{{ producto.subtotal|punto_miles }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="total"><strong>Total:</strong> {{ total|punto_miles }}</p>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h2>Reporte de Ventas</h2>
+  </div>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Número de Venta</th>
+        <th>Cliente</th>
+        <th>Vendedor</th>
+        <th>Estado</th>
+        <th>Fecha de Venta</th>
+        <th>Descargar</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for venta in ventas %}
+        <tr>
+          <td>{{ venta.numero_venta }}</td>
+          <td>{{ venta.cliente.cliente_profile.nombre_supermercado }}</td>
+          <td>{{ venta.vendedor.get_full_name }}</td>
+          <td>{{ venta.get_estado_display }}</td>
+          <td>{{ venta.fecha_venta }}</td>
+          <td>
+            <!-- Botón para Descargar PDF -->
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_pdf=true&venta_id={{ venta.id }}" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
+            
+            <!-- Botón para Descargar Excel -->
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_excel=true&venta_id={{ venta.id }}" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Excel</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

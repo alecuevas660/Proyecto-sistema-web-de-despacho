@@ -1,0 +1,122 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block content %}
+<style>
+    .status-success {
+        color: green;
+    }
+
+    .status-warning {
+        color: orange;
+    }
+
+    .status-danger {
+        color: red;
+    }
+
+    /* Evitar el quiebre de palabras en los encabezados */
+    th {
+        white-space: nowrap; /* No permite que el texto se rompa */
+        overflow: hidden; /* Oculta el texto que se desborda */
+        text-overflow: ellipsis; /* Añade "..." si el texto es demasiado largo */
+    }
+
+    /* Para el contenido de las celdas */
+    td {
+        word-wrap: break-word;
+        word-break: break-word;
+        max-width: 250px; /* Ajusta el ancho de la celda si es necesario */
+        white-space: normal; /* Permite el salto de línea en las celdas */
+        overflow-wrap: break-word;
+    }
+
+    .table-responsive {
+        overflow-x: auto; /* Permite desplazamiento horizontal si es necesario */
+    }
+</style>
+
+<div class="container-fluid">
+
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h2>Reporte de Inventario</h2>
+        </div>
+
+        <!-- Formulario de filtros -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <form method="get" action="" class="d-flex gap-2">
+                    <input type="text" name="nombre" class="form-control" id="nombre" placeholder="Nombre del Producto..." value="{{ request.GET.nombre }}">
+
+                    <select name="categoria" class="form-select" id="categoria" style="width: auto;">
+                        <option value="">Todas las categorías</option>
+                        {% for categoria in categorias %}
+                        <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:"s" %}
+                        selected{% endif %}>{{ categoria.nombre }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="stock_status" class="form-select" id="stock_status" style="width: auto;">
+                        <option value="">Todos los stock</option>
+                        <option value="success" {% if request.GET.stock_status == 'success' %}selected{% endif %}>Óptimo
+                        </option>
+                        <option value="warning" {% if request.GET.stock_status == 'warning' %}selected{% endif %}>Bajo
+                        </option>
+                        <option value="danger" {% if request.GET.stock_status == 'danger' %}selected{% endif %}>Crítico
+                        </option>
+                    </select>
+
+                    <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+                    
+                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_pdf=true" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i>Descargar PDF</a>
+                        <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_excel=true" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i>Descargar Excel</a>
+                    
+                </form>
+            </div>
+        </div>
+
+
+        <!-- Tabla del reporte -->
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                            <th>Descripción</th>
+                            <th>Precio</th>
+                            <th>Stock Mínimo</th>
+                            <th>Stock Actual</th>
+                            <th>Estado</th>
+                            <th>Valor Total en Inventario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in productos_inventario %}
+                        {% with stock_status=item.stock_status %}
+                        <tr>
+                            <td>{{ item.producto.name }}</td>
+                            <td>{{ item.producto.categoria.nombre }}</td>
+                            <td>{{ item.producto.description }}</td>
+                            <td>{{ item.producto.price|punto_miles }}</td>
+                            <td>{{ item.producto.stock_minimo }}</td>
+                            <td>{{ item.stock_actual }}</td>
+                            <td>
+                                {% with status=item.producto.get_stock_status %}
+                                    <span class="badge bg-{{ status.1 }}">{{ status.0 }}</span>
+                                {% endwith %}
+                            </td>
+                            <td>{{ item.valor_inventario|punto_miles }}</td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div>
+                    <h2>Valor Total del Inventario: {{ total_valor_inventario|punto_miles }}</h2>
+                </div>
+</div>
+
+{% endblock %}

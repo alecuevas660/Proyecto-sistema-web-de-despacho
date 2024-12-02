@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe de Envío</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Informe de Seguimiento de Envío</h1>
+    <p><strong>Orden de Despacho:</strong> {{ orden_id }}</p>
+    <p><strong>Cliente:</strong> {{ cliente }}</p>
+    <p><strong>Transportista:</strong> {{ transportista }}</p>
+    <p><strong>Dirección de Entrega:</strong> {{ direccion_entrega }}</p>
+    <p><strong>Estado de Envío:</strong> {{ estado_envio }}</p>
+    <p><strong>Ubicación Actual:</strong> {{ ubicacion_actual }}</p>
+    <p><strong>Última Actualización:</strong> {{ fecha_actualizacion }}</p>
+    <p><strong>Comentarios:</strong></p>
+    <p>{{ comentarios }}</p>
+</body>
+</html>

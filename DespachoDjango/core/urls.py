@@ -7,7 +7,7 @@ from django.contrib.auth import views as auth_views
 from apps.users.views import logout_view
 
 from apps.home.views import HomeView
-from . import views
+from apps.reportes import views
 
 
 urlpatterns = [

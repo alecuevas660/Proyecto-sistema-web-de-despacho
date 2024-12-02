@@ -335,20 +335,3 @@ body {
     background-color: #4caf50; /* Color verde para "Óptimo" */
     color: #fff;
 }
-
-/* Cambia el color de la barra lateral aquí */
-.sidebar {
-    background-color: #FF6347; /* Cambia este valor por el color que desees */
-    color: rgb(62, 61, 61);
-    width: 80px;
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-}
-.sidebar .nav-link {
-    color: white;
-}
-.sidebar .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* Efecto de hover en los íconos */
-}

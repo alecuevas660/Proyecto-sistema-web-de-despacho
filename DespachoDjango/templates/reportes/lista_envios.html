@@ -1,0 +1,46 @@
+{% extends 'dashboard/base_dashboard.html' %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h2>Reporte de Envíos</h2>
+  </div>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>ID de Orden</th>
+        <th>Cliente</th>
+        <th>Transportista</th>
+        <th>Estado de Envío</th>
+        <th>Ubicación Actual</th>
+        <th>Fecha de Actualización</th>
+        <th>Descargar</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for envio in envios %}
+        <tr>
+          <td>{{ envio.orden.id }}</td>
+          <td>{{ envio.orden.cliente.get_full_name }}</td>
+          <td>{{ envio.orden.transportista.get_full_name }}</td>
+          <td>{{ envio.get_estado_envio_display }}</td>
+          <td>{{ envio.ubicacion_actual }}</td>
+          <td>{{ envio.fecha_actualizacion }}</td>
+          <td>
+            <!-- Botón para Descargar PDF -->
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_pdf=true&envio_id={{ envio.id }}" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
+            
+            <!-- Botón para Descargar Excel -->
+            <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}descargar_excel=true&envio_id={{ envio.id }}" class="btn btn-sm btn-success"><i class="fas fa-file-excel"></i> Excel</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+
+
+{% endblock %}

@@ -113,7 +113,7 @@
 
                     <!-- Reportes -->
                     <li class="nav-item">
-                        <a class="nav-link"
+                        <a class="nav-link {% if request.resolver_match.namespace == 'reportes' %}active{% endif %}"
                            href="#reportesSubmenu"
                            data-bs-toggle="collapse"
                            role="button"
@@ -121,21 +121,25 @@
                            aria-controls="reportesSubmenu">
                             <i class="fas fa-chart-line"></i> Reportes
                         </a>
-                        <div class="collapse" id="reportesSubmenu">
+                        <div class="collapse {% if request.resolver_match.namespace == 'reportes' %}show{% endif %}"
+                            id="reportesSubmenu">
                             <ul class="nav flex-column">
                                 <li class="nav-item">
-                                    <a class="nav-link" href="{% url 'reportebackend:reportebackend' %}">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_ventas' %}active{% endif %}"
+                                       href="{% url 'reportes:lista_ventas' %}">
                                         <i class="fas fa-file-invoice-dollar"></i> Ventas
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_envios' %}active{% endif %}" 
+                                    href="{% url 'reportes:lista_envios' %}">
                                         <i class="fas fa-truck-loading"></i> Envíos
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" href="#">
-                                        <i class="fas fa-chart-pie"></i> Estadísticas
+                                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_inventario' %}active{% endif %}" 
+                                    href="{% url 'reportes:lista_inventario' %}">
+                                        <i class="fas fa-boxes"></i> Inventario
                                     </a>
                                 </li>
                             </ul>

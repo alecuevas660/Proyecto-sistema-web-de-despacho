@@ -170,13 +170,11 @@ class UserCreateView(BaseUserView, CreateView):
             current_site = get_current_site(self.request)
             verification_url = reverse('users:verify_email', args=[
                                        user.verification_token])
-            full_verification_url = f"http://{
-                current_site.domain}{verification_url}"
+            full_verification_url = f"http://{current_site.domain}{verification_url}"
 
             send_mail(
                 'Verificacion de correo electronico',
-                f'Hola {user.get_full_name()},\n\nPor favor, confirma tu correo electrónico haciendo clic en el siguiente enlace: {
-                    full_verification_url}',
+                f'Hola {user.get_full_name()},\n\nPor favor, confirma tu correo electrónico haciendo clic en el siguiente enlace: {full_verification_url}',
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
@@ -186,8 +184,7 @@ class UserCreateView(BaseUserView, CreateView):
 
             messages.success(
                 self.request,
-                f'{"Cliente" if user_type == "client" else "Empleado"} {
-                    user.get_full_name()} creado exitosamente.'
+                f'{"Cliente" if user_type == "client" else "Empleado"} {user.get_full_name()} creado exitosamente.'
             )
             return super().form_valid(form)
         except Exception as e:
