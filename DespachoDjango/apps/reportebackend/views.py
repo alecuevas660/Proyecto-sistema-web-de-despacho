@@ -3,6 +3,7 @@ from django.views.generic import ListView
 from django.db.models import Q
 from apps.inventario.models import OrdenDespacho
 from openpyxl import Workbook
+<<<<<<< HEAD
 from openpyxl.styles import Alignment, Font, Border, Side
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from django.http import HttpResponse
@@ -13,6 +14,12 @@ from django.template.loader import render_to_string
 from openpyxl.utils.exceptions import InvalidFileException
 import random
 
+=======
+from django.http import HttpResponse
+from django.utils import timezone
+from xhtml2pdf import pisa
+from django.template.loader import render_to_string
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
 class ReporteView(ListView):
     model = OrdenDespacho
     template_name = 'reportebackend.html'
@@ -51,6 +58,7 @@ class ReporteView(ListView):
         return context
     
 def exportar_excel(request):
+<<<<<<< HEAD
     # Fechas "en duro"
     fecha_inicio = '01-11-2024'
     fecha_fin = '01-12-2024'
@@ -58,11 +66,16 @@ def exportar_excel(request):
     # Obtener las órdenes de la base de datos (manteniendo esta parte)
     queryset = OrdenDespacho.objects.select_related('cliente', 'cliente__cliente_profile', 'transportista')
 
+=======
+    
+    queryset = OrdenDespacho.objects.select_related('cliente', 'cliente__cliente_profile','transportista')
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
     # Crear el libro de Excel
     wb = Workbook()
     ws_reporte = wb.active
     ws_reporte.title = "Reporte Financiero"
 
+<<<<<<< HEAD
     
     # Título del reporte con fechas
     ws_reporte.append([f'REPORTE FINANCIERO - Desde {fecha_inicio} hasta {fecha_fin}'])
@@ -246,6 +259,36 @@ def exportar_pdf(request):
     if fecha_inicio and fecha_fin:
         queryset = queryset.filter(fecha_creacion__range=[fecha_inicio, fecha_fin])
 
+=======
+    # Agregar parámetros del reporte
+    ws_reporte.append(['REPORTE FINANCIERO'])
+    ws_reporte.append(['Id de la orden', 'Cliente', 'Asignado a'])
+
+    for orden in queryset:
+        # Añadir una fila con los datos correspondientes
+        cliente_nombre = orden.cliente.cliente_profile.nombre_supermercado if orden.cliente and orden.cliente.cliente_profile else "N/A"
+        transportista_nombre = orden.transportista.get_full_name() if orden.transportista else "N/A"
+        
+        ws_reporte.append([str(orden.id), cliente_nombre, transportista_nombre])
+
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=Reporte_financiero_{}.xlsx'.format(
+        timezone.now().strftime('%Y%m%d_%H%M%S')
+    )
+
+    wb.save(response)
+    return response
+    #return HttpResponse("¡La función exportar_excel ha sido ejecutada!")
+
+
+def exportar_pdf(request):
+    # Obtén los datos de las órdenes de despacho
+    queryset = OrdenDespacho.objects.select_related('cliente', 'cliente__cliente_profile', 'transportista')
+
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
     # Convertimos los UUIDs a cadenas (si es necesario)
     ordenes_data = []
     for orden in queryset:
@@ -256,6 +299,7 @@ def exportar_pdf(request):
         ordenes_data.append({
             'id': orden_id_str,
             'cliente': cliente_nombre,
+<<<<<<< HEAD
             'asignado_a': asignado_a,
             'fecha_creacion': orden.fecha_creacion.strftime('%Y-%m-%d')  # Formatear la fecha
         })
@@ -266,6 +310,13 @@ def exportar_pdf(request):
         'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else 'N/A',
         'fecha_fin': fecha_fin.strftime('%Y-%m-%d') if fecha_fin else 'N/A'
     })
+=======
+            'asignado_a': asignado_a
+        })
+
+    # Renderizamos el HTML a partir de una plantilla
+    html_content = render_to_string('reporte_pdf_template.html', {'ordenes': ordenes_data})
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
 
     # Creamos una respuesta HTTP con el contenido PDF
     response = HttpResponse(content_type='application/pdf')

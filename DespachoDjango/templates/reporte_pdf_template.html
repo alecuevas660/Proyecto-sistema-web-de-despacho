@@ -20,14 +20,20 @@
             text-align: left;
         }
         th {
+<<<<<<< HEAD
             background-color: #d9534f;
             color: white;
+=======
+            background-color: #d9534f; 
+            color: white; 
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
         }
         .header {
             text-align: center;
             font-size: 18px;
             margin-bottom: 20px;
         }
+<<<<<<< HEAD
         .fecha {
             font-style: italic;
             text-align: right;
@@ -38,6 +44,8 @@
             font-weight: bold;
             margin-top: 20px;
         }
+=======
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
     </style>
 </head>
 <body>
@@ -45,25 +53,35 @@
     <div class="header">
         <h1>Reporte de Órdenes de Despacho</h1>
         <p>Generado el: {% now "d-m-Y" %}</p>
+<<<<<<< HEAD
 
         <!-- Fechas de inicio y fin -->
         <p class="fecha">
             Desde: {{ fecha_inicio }} Hasta: {{ fecha_fin }}
         </p>
+=======
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
     </div>
 
     <table>
         <thead>
             <tr>
+<<<<<<< HEAD
                 <th >ID de la Orden</th>
                 <th >Cliente</th>
                 <th >Asignado a</th>
                 <th >Total de la Orden</th>  
+=======
+                <th>ID de la Orden</th>
+                <th>Cliente</th>
+                <th>Asignado a</th>
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
             </tr>
         </thead>
         <tbody>
             {% for orden in ordenes %}
                 <tr>
+<<<<<<< HEAD
                     <td >{{ orden.id|slice:":18" }}</td>
                     <td >{{ orden.cliente }}</td>
                     <td >{{ orden.asignado_a }}</td>
@@ -72,13 +90,25 @@
             {% empty %}
                 <tr>
                     <td colspan="4">No hay órdenes registradas.</td>
+=======
+                    <td>{{ orden.id }}</td>
+                    <td>{{ orden.cliente }}</td>
+                    <td>{{ orden.asignado_a }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="3">No hay órdenes registradas.</td>
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
                 </tr>
             {% endfor %}
         </tbody>
     </table>
 
+<<<<<<< HEAD
     <!-- Mostrar el total general -->
     <p class="total-general">Total General: ${{ total_general }}</p>
 
+=======
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
 </body>
 </html>

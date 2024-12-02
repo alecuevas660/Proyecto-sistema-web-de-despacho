@@ -3,6 +3,7 @@
 {% block content %}
     <h1>Generar Reportes de Ordenes</h1>
     <hr>
+<<<<<<< HEAD
     <!-- Fila para los botones de exportación y el filtro por fecha -->
     <div class="row mb-3 d-flex justify-content-between align-items-center">
         <!-- Filtro de fechas (a la izquierda) -->
@@ -38,6 +39,17 @@
     </div>
 
     <!-- Barra de búsqueda de cliente -->
+=======
+    <div class="d-flex justify-content-end mb-3">
+        <h6>Exportar a:</h6>
+    </div>
+    <div class="d-flex justify-content-end mb-3">
+        <a href="{% url 'reportebackend:exportar_pdf' %}" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
+        <a href="{% url 'reportebackend:exportar_excel' %}" class="btn btn-sm btn-success ms-2"><i class="fas fa-file-excel"></i> Excel</a>
+    </div> <br>
+    
+    <!-- Filtro de búsqueda -->
+>>>>>>> a78dd5d0da9c93d7f98d1c059e1ae4fdb6bc8298
     <div class="row mb-4">
         <div class="col-md-12">
             <form method="get" class="d-flex gap-2">
