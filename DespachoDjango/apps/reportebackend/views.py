@@ -168,7 +168,7 @@ def exportar_pdf(request):
     # Consulta a la base de datos
     queryset = OrdenDespacho.objects.select_related('cliente', 'cliente__cliente_profile', 'transportista')
 
-    ordenes_data = []
+    ordenes_data = []_
     total_general = 0
 
     if queryset.exists():

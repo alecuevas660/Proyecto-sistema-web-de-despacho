@@ -58,7 +58,7 @@
                 <th >ID de la Orden</th>
                 <th >Cliente</th>
                 <th >Asignado a</th>
-                <th >Total de la Orden</th>  <!-- Nueva columna para el total de la orden -->
+                <th >Total de la Orden</th>  
             </tr>
         </thead>
         <tbody>
@@ -67,7 +67,7 @@
                     <td >{{ orden.id|slice:":18" }}</td>
                     <td >{{ orden.cliente }}</td>
                     <td >{{ orden.asignado_a }}</td>
-                    <td >${{ orden.total_orden }}</td>  <!-- Mostrar el total de cada orden -->
+                    <td >${{ orden.total_orden }}</td> 
                 </tr>
             {% empty %}
                 <tr>
